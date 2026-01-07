@@ -2,7 +2,19 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { CoachingTip } from '../types';
 import { generateSystemInstruction } from './policyEngine';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+let ai: GoogleGenAI | null = null;
+
+const getAiClient = () => {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+    throw new Error("VITE_GEMINI_API_KEY is missing");
+  }
+
+  if (!ai) {
+    ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+  }
+
+  return ai;
+};
 
 const COACH_ROLE_CONTEXT = `
 You are a "Shadow Negotiator" and "Crisis Management Expert" for China Life-JHPCIC.
@@ -24,7 +36,9 @@ export const generateCoachingTip = async (transcript: string): Promise<CoachingT
   const fullSystemInstruction = generateSystemInstruction(COACH_ROLE_CONTEXT);
 
   try {
-    const response = await ai.models.generateContent({
+    const client = getAiClient();
+
+    const response = await client.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Current Conversation Context: "${transcript}"\n\nGive me one strategic tip for the agent now.`,
       config: {

@@ -3,11 +3,11 @@
 ## 项目概览
 - 前端：React 19 + Vite，Tailwind 通过 CDN 引入，Font Awesome 用于图标。
 - 目标：面向大宗团体车险客户，提供智能咨询、保单查询（含函数调用与 Mock 库）、语音座席，以及隐藏的主管监督与实时辅导模式。
-- 环境：`GEMINI_API_KEY` 注入到 `process.env.API_KEY`，浏览器端需要麦克风权限（`metadata.json` 已声明）。
+- 环境：`VITE_GEMINI_API_KEY` 通过 `import.meta.env` 注入，浏览器端需要麦克风权限（`metadata.json` 已声明）。
 
 ## 启动与构建
 1) 安装依赖：`npm install`  
-2) 配置密钥：在 `.env.local` 设置 `GEMINI_API_KEY=<你的键>`  
+2) 配置密钥：在 `.env.local` 设置 `VITE_GEMINI_API_KEY=<你的键>`  
 3) 开发：`npm run dev`（默认端口 3000，可在 `vite.config.ts` 调整）  
 4) 构建/预览：`npm run build` / `npm run preview`
 
@@ -37,7 +37,7 @@
 - `services/coachingService.ts`：主管辅导提示生成，约束同一合规策略。
 - `services/audioUtils.ts`：音频编解码与 PCM 处理。
 - `index.html`：引入 Tailwind CDN、Font Awesome 与 importmap，入口挂载 `index.tsx`。
-- `vite.config.ts`：端口/host，React 插件，`GEMINI_API_KEY` 注入。
+- `vite.config.ts`：端口/host，React 插件。
 
 ## 注意事项
 - 未配置 API Key 时，聊天接口会提示错误；Live/Coaching 也将无法工作。

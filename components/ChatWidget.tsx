@@ -3,6 +3,7 @@ import { Message, Role } from '../types';
 import ChatMessage from './ChatMessage';
 import { containsRiskContent, getStaticAnswer } from '../utils/riskControl';
 import { sendMessageToGemini } from '../services/geminiService';
+import { broadcastMessage, onBroadcastMessage } from '../services/eventBus';
 
 // Performance Optimization: Lazy load the heavy Voice Interface
 const VoiceCallInterface = React.lazy(() => import('./VoiceCallInterface'));
@@ -27,14 +28,27 @@ const TABS = ['平台功能', '车险理赔', '承保问题', '车船税'];
 const ChatWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
-  const [viewState, setViewState] = useState<'home' | 'chat'>('home'); // New state for Home Dashboard vs Chat
+  const [viewState, setViewState] = useState<'home' | 'chat'>('home'); 
   const [activeTab, setActiveTab] = useState('平台功能');
   
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]); // Start empty, dashboard acts as welcome
+  const [messages, setMessages] = useState<Message[]>([]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // --- EVENT BUS INTEGRATION ---
+  useEffect(() => {
+    // Listen for Supervisor Messages (Intervention)
+    onBroadcastMessage((msg) => {
+        // If the message is from Supervisor, add it to our chat
+        if (msg.role === Role.SUPERVISOR) {
+            setMessages(prev => [...prev, msg]);
+            setIsLoading(false); // Stop AI loading if supervisor intervenes
+        }
+    });
+  }, []);
+  // -----------------------------
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -51,10 +65,9 @@ const ChatWidget: React.FC = () => {
     const textToSend = textOverride || input.trim();
     if (!textToSend) return;
 
-    // Switch to chat view immediately
     setViewState('chat');
     
-    // Add User Message
+    // 1. Create User Message
     const newUserMsg: Message = {
       id: Date.now().toString(),
       role: Role.USER,
@@ -66,9 +79,12 @@ const ChatWidget: React.FC = () => {
     setInput('');
     setIsLoading(true);
 
+    // BROADCAST: Tell the supervisor dashboard that user spoke
+    broadcastMessage(newUserMsg);
+
     // --- LOGIC FLOW ---
 
-    // 1. Risk Control Check (Local)
+    // 2. Risk Control Check (Local)
     if (containsRiskContent(textToSend)) {
       setTimeout(() => {
         const riskMsg: Message = {
@@ -79,12 +95,13 @@ const ChatWidget: React.FC = () => {
           isError: true
         };
         setMessages(prev => [...prev, riskMsg]);
+        broadcastMessage(riskMsg); // Broadcast system/risk response
         setIsLoading(false);
       }, 500);
       return;
     }
 
-    // 2. Static Q&A Check (Local Optimization)
+    // 3. Static Q&A Check
     const staticAnswer = getStaticAnswer(textToSend);
     if (staticAnswer) {
       setTimeout(() => {
@@ -95,12 +112,13 @@ const ChatWidget: React.FC = () => {
           timestamp: new Date()
         };
         setMessages(prev => [...prev, staticMsg]);
+        broadcastMessage(staticMsg); // Broadcast AI response
         setIsLoading(false);
       }, 600);
       return;
     }
 
-    // 3. AI Processing (Gemini with Function Calling)
+    // 4. AI Processing (Gemini)
     try {
       const aiResponseText = await sendMessageToGemini(textToSend);
       
@@ -110,7 +128,17 @@ const ChatWidget: React.FC = () => {
         content: aiResponseText,
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, aiMsg]);
+      
+      // Check if loading is still true. If false, it means Supervisor interrupted!
+      setIsLoading(prevIsLoading => {
+          if (prevIsLoading) {
+            setMessages(prev => [...prev, aiMsg]);
+            broadcastMessage(aiMsg); // Broadcast AI response
+            return false;
+          }
+          return false;
+      });
+      
     } catch (err) {
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -120,7 +148,7 @@ const ChatWidget: React.FC = () => {
         isError: true
       };
       setMessages(prev => [...prev, errorMsg]);
-    } finally {
+      broadcastMessage(errorMsg);
       setIsLoading(false);
     }
   };
@@ -286,7 +314,7 @@ const ChatWidget: React.FC = () => {
             </div>
           )}
 
-          {/* Bottom Input Area - styled like the screenshot */}
+          {/* Bottom Input Area */}
           {!isVoiceMode && (
             <div className="p-3 bg-white border-t border-gray-100 shrink-0 safe-area-bottom">
                 <div className="flex items-center gap-2">

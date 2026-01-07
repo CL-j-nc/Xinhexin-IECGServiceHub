@@ -106,30 +106,68 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
                     </span>
                 </div>
                 
-                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
-                    <div className="space-y-1">
-                        <label className="text-xs text-slate-400 uppercase tracking-wider font-bold">保单号码</label>
-                        <div className="font-mono text-lg text-slate-800 font-semibold">{result.id}</div>
+                <div className="p-8">
+                    {/* Key Info Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12 mb-8">
+                        <div className="space-y-1">
+                            <label className="text-xs text-slate-400 uppercase tracking-wider font-bold">保单号码</label>
+                            <div className="font-mono text-lg text-slate-800 font-semibold">{result.id}</div>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs text-slate-400 uppercase tracking-wider font-bold">投保人 / 管理人</label>
+                            <div className="text-lg text-slate-800">{result.holder}</div>
+                        </div>
+                        <div className="space-y-1 md:col-span-2">
+                            <label className="text-xs text-slate-400 uppercase tracking-wider font-bold">方案名称</label>
+                            <div className="text-lg text-slate-800">{result.type}</div>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs text-slate-400 uppercase tracking-wider font-bold">保险止期</label>
+                            <div className="text-lg text-slate-800 font-mono">{result.expiryDate}</div>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs text-slate-400 uppercase tracking-wider font-bold">车队规模</label>
+                            <div className="text-lg text-slate-800 flex items-center gap-2">
+                                <i className="fa-solid fa-truck text-emerald-500"></i>
+                                {result.vehicleCount} 辆
+                            </div>
+                        </div>
                     </div>
-                    <div className="space-y-1">
-                        <label className="text-xs text-slate-400 uppercase tracking-wider font-bold">投保人 / 管理人</label>
-                        <div className="text-lg text-slate-800">{result.holder}</div>
-                    </div>
-                    <div className="space-y-1 md:col-span-2">
-                         <label className="text-xs text-slate-400 uppercase tracking-wider font-bold">承保险种</label>
-                         <div className="text-lg text-slate-800">{result.type}</div>
-                    </div>
-                    <div className="space-y-1">
-                         <label className="text-xs text-slate-400 uppercase tracking-wider font-bold">保险止期</label>
-                         <div className="text-lg text-slate-800 font-mono">{result.expiryDate}</div>
-                    </div>
-                    <div className="space-y-1">
-                         <label className="text-xs text-slate-400 uppercase tracking-wider font-bold">车队规模</label>
-                         <div className="text-lg text-slate-800 flex items-center gap-2">
-                             <i className="fa-solid fa-truck text-emerald-500"></i>
-                             {result.vehicleCount} 辆
-                         </div>
-                    </div>
+
+                    {/* Coverage Detail Table */}
+                    {result.coverages && result.coverages.length > 0 && (
+                        <div className="mt-6">
+                            <label className="text-xs text-slate-400 uppercase tracking-wider font-bold mb-3 block">承保方案明细</label>
+                            <div className="border border-slate-100 rounded-xl overflow-hidden shadow-sm">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
+                                        <tr>
+                                            <th className="px-5 py-3">险种名称</th>
+                                            <th className="px-5 py-3">保额 / 限额</th>
+                                            <th className="px-5 py-3 text-right">保费 (元)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {result.coverages.map((item, idx) => (
+                                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                                <td className="px-5 py-3 text-slate-700 font-medium">{item.name}</td>
+                                                <td className="px-5 py-3 text-slate-600">{item.amount}</td>
+                                                <td className="px-5 py-3 text-right font-mono text-emerald-600">{item.premium.toLocaleString()}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot className="bg-emerald-50/50 border-t border-emerald-100">
+                                        <tr>
+                                            <td colSpan={2} className="px-5 py-3 text-emerald-700 font-bold text-right">总保费合计</td>
+                                            <td className="px-5 py-3 text-right font-bold font-mono text-emerald-700">
+                                                ¥ {result.coverages.reduce((sum, i) => sum + i.premium, 0).toLocaleString()}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    )}
                 </div>
                 
                 <div className="bg-slate-50 px-8 py-4 border-t border-slate-100 flex justify-end gap-3">

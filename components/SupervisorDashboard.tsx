@@ -1,82 +1,73 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CoachingTip } from '../types';
+import { CoachingTip, Message, Role } from '../types';
 import { generateCoachingTip } from '../services/coachingService';
 import PolicyManagementModule from './PolicyManagementModule';
+import { broadcastMessage, onBroadcastMessage } from '../services/eventBus';
 
 interface SupervisorDashboardProps {
   onExit: () => void;
 }
 
 const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ onExit }) => {
-  // Navigation State: 'monitor' or 'policy-db'
   const [activeTab, setActiveTab] = useState<'monitor' | 'policy-db'>('monitor');
-
-  const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState('');
   const [tips, setTips] = useState<CoachingTip[]>([]);
-  const [status, setStatus] = useState('待机');
-  const recognitionRef = useRef<any>(null);
+  
+  // Real-time Chat Sync
+  const [chatHistory, setChatHistory] = useState<Message[]>([]);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Intervention Input
+  const [interventionText, setInterventionText] = useState('');
 
-  // Initialize Speech Recognition (Chrome only usually)
+  // Event Bus Listener
   useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'zh-CN'; // Set to Chinese
-
-      recognitionRef.current.onresult = (event: any) => {
-        let finalTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript + ' ';
-          }
+    onBroadcastMessage((msg) => {
+        setChatHistory(prev => [...prev, msg]);
+        
+        // Also generate coaching tip if it's user input
+        if (msg.role === Role.USER) {
+            fetchTip(msg.content);
         }
-        if (finalTranscript) {
-          setTranscript(prev => (prev + finalTranscript).slice(-500)); // Keep last 500 chars context
-          fetchTip(finalTranscript);
-        }
-      };
-
-      recognitionRef.current.onerror = (event: any) => {
-        console.error("Speech error", event.error);
-        setStatus('音频错误');
-      };
-    }
+    });
   }, []);
+
+  // Auto scroll
+  useEffect(() => {
+    if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatHistory]);
 
   const fetchTip = async (newText: string) => {
     const tip = await generateCoachingTip(newText);
     if (tip) {
-      setTips(prev => [tip, ...prev].slice(0, 5)); // Keep latest 5 tips
+      setTips(prev => [tip, ...prev].slice(0, 5));
     }
   };
 
-  const toggleSession = () => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      setStatus('待机');
-    } else {
-      recognitionRef.current?.start();
-      setIsListening(true);
-      setStatus('实时监控中');
-      setTips([]);
-      setTranscript('');
-      // Initial Tip
-      setTips([{
-        id: 'init',
-        category: 'INFO',
-        content: '建议开场白: "您好，我是中国人寿财险大宗业务高级主管..."',
-        priority: 'HIGH'
-      }]);
-    }
+  const handleSendIntervention = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!interventionText.trim()) return;
+
+    const supMsg: Message = {
+        id: Date.now().toString(),
+        role: Role.SUPERVISOR,
+        content: interventionText,
+        timestamp: new Date()
+    };
+
+    // 1. Show in own dashboard
+    setChatHistory(prev => [...prev, supMsg]);
+    
+    // 2. Broadcast to Customer
+    broadcastMessage(supMsg);
+    
+    setInterventionText('');
   };
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 font-mono flex flex-col">
-      {/* Top Bar - Backend Style */}
+      {/* Top Bar */}
       <div className="h-14 border-b border-slate-700 flex items-center justify-between px-6 bg-slate-950 shrink-0 shadow-lg z-20">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
@@ -94,7 +85,6 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ onExit }) => 
           
           <div className="h-6 w-px bg-slate-700 mx-2"></div>
 
-          {/* Navigation Tabs */}
           <div className="flex bg-slate-900 rounded p-1 border border-slate-800">
              <button 
                 onClick={() => setActiveTab('monitor')}
@@ -123,85 +113,111 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ onExit }) => 
       </div>
 
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Background Grid for Dashboard feeling */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-5 pointer-events-none"></div>
         
-        {/* VIEW 1: Policy Management Database */}
         {activeTab === 'policy-db' && (
             <div className="w-full h-full relative z-10">
                 <PolicyManagementModule />
             </div>
         )}
 
-        {/* VIEW 2: Live Monitor (Original View) */}
         {activeTab === 'monitor' && (
             <div className="flex w-full h-full relative z-10">
-                {/* Left: Live Data & Transcript */}
-                <div className="flex-1 p-6 flex flex-col border-r border-slate-800">
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h2 className="text-emerald-500 font-bold mb-1 flex items-center gap-2">
-                             <i className="fa-solid fa-satellite-dish animate-pulse"></i> 呼叫中心实时监控
-                        </h2>
-                        <div className="text-2xl font-light text-white mt-2">极速物流集团有限公司 <span className="text-sm bg-slate-800 px-2 py-0.5 rounded text-slate-400 align-middle ml-2">Web Call</span></div>
-                        <div className="text-sm text-slate-500 mt-1">当前线路: <span className="text-emerald-400 font-mono">SECURE-VOIP-001</span></div>
-                    </div>
-                    <button 
-                        onClick={toggleSession}
-                        className={`px-6 py-3 rounded-lg flex items-center gap-3 font-bold transition-all shadow-lg ${isListening ? 'bg-red-600 text-white hover:bg-red-700 animate-pulse' : 'bg-emerald-600 text-white hover:bg-emerald-500'}`}
-                    >
-                        <i className={`fa-solid ${isListening ? 'fa-phone-slash' : 'fa-headset'} text-xl`}></i>
-                        {isListening ? '断开连接' : '接入通话'}
-                    </button>
-                </div>
-
-                <div className="flex-1 bg-slate-950 rounded-xl p-4 border border-slate-800 relative overflow-hidden shadow-inner">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500 opacity-50"></div>
-                    <div className="absolute top-3 right-3 text-[10px] text-slate-500 border border-slate-700 px-2 rounded">ENCRYPTED</div>
-                    
-                    <div className="h-full overflow-y-auto font-mono text-sm leading-relaxed p-2 space-y-2">
-                        {transcript ? (
-                        <p className="text-slate-300 whitespace-pre-wrap">{transcript}</p>
-                        ) : (
-                        <div className="h-full flex items-center justify-center text-slate-600 italic">
-                            Waiting for voice stream...
+                {/* Left: Live Transcript Area */}
+                <div className="flex-1 flex flex-col border-r border-slate-800">
+                    <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                        <div>
+                            <h2 className="text-emerald-500 font-bold flex items-center gap-2">
+                                <i className="fa-solid fa-satellite-dish animate-pulse"></i> 客户服务实时监控
+                            </h2>
+                            <div className="text-xs text-slate-500 mt-1">Session ID: <span className="font-mono">LIVE-CN-7721</span></div>
                         </div>
-                        )}
+                        <div className="px-3 py-1 bg-emerald-900/30 border border-emerald-500/30 rounded text-emerald-400 text-xs">
+                            状态: 客户在线
+                        </div>
                     </div>
-                </div>
+
+                    {/* Chat Stream */}
+                    <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-950 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900">
+                        {chatHistory.length === 0 && (
+                            <div className="h-full flex flex-col items-center justify-center opacity-30">
+                                <i className="fa-regular fa-comments text-4xl mb-4"></i>
+                                <p>等待客户发起对话...</p>
+                            </div>
+                        )}
+                        
+                        {chatHistory.map((msg) => (
+                            <div key={msg.id} className={`flex ${msg.role === Role.USER ? 'justify-start' : 'justify-end'}`}>
+                                <div className={`max-w-[80%] rounded-lg p-3 text-sm leading-relaxed
+                                    ${msg.role === Role.USER 
+                                        ? 'bg-slate-800 text-slate-200 rounded-tl-none border border-slate-700' 
+                                        : msg.role === Role.SUPERVISOR
+                                            ? 'bg-orange-600/20 border border-orange-500/50 text-orange-200 rounded-tr-none'
+                                            : 'bg-emerald-900/20 border border-emerald-500/30 text-emerald-300 rounded-tr-none'
+                                    }`}>
+                                    <div className="text-[10px] uppercase font-bold mb-1 opacity-50 flex items-center gap-2">
+                                        {msg.role === Role.USER ? <><i className="fa-solid fa-user"></i> 客户</> : 
+                                         msg.role === Role.SUPERVISOR ? <><i className="fa-solid fa-headset"></i> 我 (人工)</> : 
+                                         <><i className="fa-solid fa-robot"></i> AI 助手</>}
+                                        <span>{msg.timestamp.toLocaleTimeString()}</span>
+                                    </div>
+                                    {msg.content}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Intervention Input */}
+                    <div className="p-4 bg-slate-900 border-t border-slate-800">
+                        <form onSubmit={handleSendIntervention} className="flex gap-4">
+                            <input 
+                                type="text"
+                                value={interventionText}
+                                onChange={e => setInterventionText(e.target.value)}
+                                placeholder="输入回复内容以接管 AI (回车发送)..."
+                                className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all font-sans"
+                            />
+                            <button 
+                                type="submit"
+                                disabled={!interventionText.trim()}
+                                className="bg-orange-600 hover:bg-orange-500 text-white px-6 py-2 rounded-lg font-bold transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-orange-900/20"
+                            >
+                                <i className="fa-solid fa-paper-plane"></i>
+                                发送
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
                 {/* Right: AI Coaching */}
-                <div className="w-96 bg-slate-900 p-6 flex flex-col shadow-2xl z-20">
-                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <div className="w-80 bg-slate-900 p-4 flex flex-col shadow-2xl z-20 border-l border-slate-800">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                         <i className="fa-solid fa-brain text-purple-500"></i>
-                        AI 实时辅导 (Copilot)
+                        智能辅助分析 (Copilot)
                     </h3>
                     
-                    <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                    <div className="flex-1 overflow-y-auto space-y-3">
                         {tips.map((tip) => (
                         <div 
                             key={tip.id} 
-                            className={`p-4 rounded-lg border-l-4 shadow-lg animate-fade-in-up bg-slate-800
+                            className={`p-3 rounded border-l-2 shadow-md bg-slate-800/50
                             ${tip.priority === 'HIGH' ? 'border-red-500' : 'border-blue-500'}
                             `}
                         >
-                            <div className="flex justify-between items-start mb-2">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded
-                                ${tip.category === 'RISK' ? 'bg-red-900/50 text-red-400' : 
-                                tip.category === 'TRUST' ? 'bg-emerald-900/50 text-emerald-400' : 'bg-blue-900/50 text-blue-400'}`}>
-                                {tip.category}
-                            </span>
-                            {tip.priority === 'HIGH' && <i className="fa-solid fa-triangle-exclamation text-red-500 text-xs animate-pulse"></i>}
+                            <div className="flex justify-between items-center mb-1">
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded
+                                    ${tip.category === 'RISK' ? 'bg-red-900/50 text-red-400' : 
+                                    tip.category === 'TRUST' ? 'bg-emerald-900/50 text-emerald-400' : 'bg-blue-900/50 text-blue-400'}`}>
+                                    {tip.category}
+                                </span>
                             </div>
-                            <p className="text-sm text-slate-200">{tip.content}</p>
+                            <p className="text-xs text-slate-300 leading-normal">{tip.content}</p>
                         </div>
                         ))}
                         {tips.length === 0 && (
-                        <div className="text-center mt-20 opacity-30">
-                            <i className="fa-solid fa-microchip text-4xl mb-4"></i>
-                            <p className="text-xs">AI 正在分析通话语义...</p>
-                        </div>
+                            <div className="text-center mt-10 p-6 border border-dashed border-slate-700 rounded-xl">
+                                <p className="text-xs text-slate-500">暂无风险提示</p>
+                            </div>
                         )}
                     </div>
                 </div>

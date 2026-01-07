@@ -36,8 +36,12 @@ export class LiveVoiceClient {
   private stream: MediaStream | null = null;
   private isConnected = false;
 
-  constructor(apiKey: string) {
-    this.ai = new GoogleGenAI({ apiKey });
+  constructor() {
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
+      throw new Error("VITE_GEMINI_API_KEY is missing");
+    }
+
+    this.ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
   }
 
   async connect(onStatusChange: (status: string) => void) {

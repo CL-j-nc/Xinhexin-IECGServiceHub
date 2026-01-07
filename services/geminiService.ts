@@ -67,7 +67,7 @@ export const sendMessageToGemini = async (userMessage: string): Promise<string> 
   }
 
   try {
-    const client = getAiClient();
+    getAiClient();
 
     if (!chatSession) throw new Error("Chat session failed to initialize");
 
@@ -76,12 +76,11 @@ export const sendMessageToGemini = async (userMessage: string): Promise<string> 
     
     // 2. Check for Function Calls (Policy Lookup)
     const candidates = response.candidates;
-    if (!candidates || candidates.length === 0) return "连接不稳定，请稍后重试。";
-
-    const content = candidates[0].content;
-    const parts = content?.parts;
-    if (!parts || parts.length === 0) {
-      return response.text || "我理解您的请求，但暂时无法生成文本回复。";
+    const candidate = candidates?.[0];
+    const parts = candidate?.content?.parts;
+    if (!candidate || !parts || parts.length === 0) {
+      const fallbackText = response.text ?? "（模型未返回有效内容）";
+      return fallbackText;
     }
 
     // Iterate through parts to find function calls
@@ -117,8 +116,9 @@ export const sendMessageToGemini = async (userMessage: string): Promise<string> 
       }
     }
 
-    // 3. Extract final text
-    return response.text || "我理解您的请求，但暂时无法生成文本回复。";
+    // 3. Extract final text with defensive fallback
+    const text = candidate?.content?.parts?.[0]?.text ?? response.text ?? "（模型未返回有效内容）";
+    return text;
 
   } catch (error) {
     console.error("Gemini API Error:", error);
@@ -175,8 +175,11 @@ export const extractPolicyFromPdf = async (base64Pdf: string): Promise<Partial<P
             }
         });
 
-        if (response.text) {
-            return JSON.parse(response.text) as Partial<PolicyData>;
+        const candidate = response.candidates?.[0];
+        const text = candidate?.content?.parts?.[0]?.text ?? response.text;
+
+        if (text) {
+            return JSON.parse(text) as Partial<PolicyData>;
         }
         return null;
     } catch (e) {

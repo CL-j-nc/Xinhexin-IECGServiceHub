@@ -56,8 +56,11 @@ export const generateCoachingTip = async (transcript: string): Promise<CoachingT
       }
     });
 
-    if (response.text) {
-      const data = JSON.parse(response.text);
+    const candidate = response.candidates?.[0];
+    const text = candidate?.content?.parts?.[0]?.text ?? response.text ?? "（模型未返回有效内容）";
+
+    if (text) {
+      const data = JSON.parse(text);
       return {
         id: Date.now().toString(),
         ...data

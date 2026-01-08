@@ -1,4 +1,4 @@
-import { PolicyData } from './types';
+import { PolicyData } from '../types';
 
 // 1. Risk Control: Forbidden words that trigger immediate fallback
 export const RISK_WORDS = [

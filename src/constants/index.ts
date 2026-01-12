@@ -8,8 +8,8 @@ export const RISK_WORDS = [
 
 // 2. Mock Database for "Read-Only" Commercial Fleet Policy Queries
 export const MOCK_POLICY_DB: Record<string, PolicyData> = {
-  'POL-8888': {
-    id: 'POL-8888',
+  '668888': {
+    id: '668888',
     holder: '张经理 (车队管理)',
     companyName: '极速物流集团有限公司',
     status: 'Active',
@@ -23,8 +23,8 @@ export const MOCK_POLICY_DB: Record<string, PolicyData> = {
         { name: '车上人员责任保险(乘客)', amount: '10万/座', premium: 48000 }
     ]
   },
-  'POL-9999': {
-    id: 'POL-9999',
+  '669999': {
+    id: '669999',
     holder: '李专员 (运营部)',
     companyName: '城市公交运输总公司',
     status: 'Expired',

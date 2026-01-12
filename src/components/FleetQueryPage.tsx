@@ -1,55 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { queryPolicyDatabase } from '../services/mockDatabase';
-import { PolicyData } from '../types';
+import { verifyPolicy } from '../services/policyEngine';
+import { PolicyVerifyResult } from '../services/policyEngine.types.ts';
+import { FAQ_CONFIG } from '../constants/faq.config';
 
 interface FleetQueryPageProps {
     onBack: () => void;
 }
 
-const STATUS_MAP: Record<string, string> = {
-    Active: '保单生效中',
-    Expired: '保单已过期',
-    InAmendment: '保单保全中'
-};
-
-interface StatusStyle {
-    bg: string;
-    text: string;
-    border: string;
-    icon: string;
-}
-
-const STATUS_STYLE: Record<keyof typeof STATUS_MAP, StatusStyle> = {
-    Active: {
+const STATUS_STYLE: Record<string, { bg: string; text: string; border: string; icon: string }> = {
+    ACTIVE: {
         bg: 'bg-emerald-100',
         text: 'text-emerald-800',
         border: 'border-emerald-300',
         icon: 'fa-check-circle'
     },
-    Expired: {
+    EXPIRED: {
         bg: 'bg-rose-100',
         text: 'text-rose-800',
         border: 'border-rose-300',
         icon: 'fa-calendar-times'
     },
-    InAmendment: {
+    PENDING: {
         bg: 'bg-amber-100',
         text: 'text-amber-800',
         border: 'border-amber-300',
         icon: 'fa-file-signature'
+    },
+    NOT_FOUND: {
+        bg: 'bg-slate-100',
+        text: 'text-slate-700',
+        border: 'border-slate-300',
+        icon: 'fa-question-circle'
     }
 };
 
 const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
     const [policyId, setPolicyId] = useState('');
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<PolicyData | null>(null);
+    const [result, setResult] = useState<PolicyVerifyResult | null>(null);
     const [error, setError] = useState<string>('');
     const [formatValid, setFormatValid] = useState<boolean | null>(null);
     const [showStatusFlow, setShowStatusFlow] = useState(false);
     const [showPreservationMenu, setShowPreservationMenu] = useState(false);
+    const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
 
-    const validateFormat = (id: string) => /^POL-[0-9]{4,10}$/i.test(id.trim());
+    const validateFormat = (id: string) => /^66[0-9]{4,10}$/i.test(id.trim());
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value.toUpperCase();
@@ -63,6 +58,7 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
             setError('');
             setShowStatusFlow(false);
             setShowPreservationMenu(false);
+            setExpandedFAQ(null);
         }
     };
 
@@ -77,7 +73,7 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
         }
 
         if (!validateFormat(trimmed)) {
-            setError('保单号格式错误，应为 POL- 后接4至10位数字');
+            setError('保单号格式错误，应为 66 后接4至10位数字');
             setFormatValid(false);
             return;
         }
@@ -91,12 +87,13 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
         await new Promise(r => setTimeout(r, 1200 + Math.random() * 800));
 
         try {
-            const data = await queryPolicyDatabase(trimmed);
-            if (data) {
-                setResult(data);
+            const verifyResult = await verifyPolicy(trimmed);
+            setResult(verifyResult);
+
+            if (verifyResult.success) {
                 setShowStatusFlow(true);
             } else {
-                setError('未找到该保单记录');
+                setError(verifyResult.systemMessage || '核验未通过');
             }
         } catch {
             setError('核验服务暂时不可用');
@@ -115,15 +112,14 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
         return () => window.removeEventListener('keydown', handleEnter);
     }, [policyId, loading]);
 
-    const status = result?.status ?? '' as keyof typeof STATUS_MAP;
-    const style = status && STATUS_STYLE[status] ? STATUS_STYLE[status] : {
-        bg: 'bg-slate-100',
-        text: 'text-slate-700',
-        border: 'border-slate-300',
-        icon: 'fa-question-circle'
+    const toggleFAQ = (id: string) => {
+        setExpandedFAQ(expandedFAQ === id ? null : id);
     };
 
-    const coverages = result?.coverages ?? [];
+    const status = result?.status ?? 'NOT_FOUND';
+    const style = STATUS_STYLE[status] ?? STATUS_STYLE.NOT_FOUND;
+
+    const allowExtension = result?.allowBusinessExtension ?? false;
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -157,7 +153,7 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
                                 type="text"
                                 value={policyId}
                                 onChange={handleChange}
-                                placeholder="POL-12345678"
+                                placeholder="6612345678"
                                 maxLength={16}
                                 autoComplete="off"
                                 className={`
@@ -209,40 +205,48 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
                 </section>
 
                 {result && (
-                    <section className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+                    <section className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden mb-10">
                         <div className={`px-8 py-6 ${style.bg} border-b ${style.border}`}>
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div>
                                     <div className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-1">
                                         核验结果 · {new Date().toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                                     </div>
-                                    <h3 className="text-2xl font-bold text-slate-800">{result.companyName}</h3>
-                                    <div className="text-sm text-slate-600 mt-1">{result.type}</div>
+                                    <h3 className="text-2xl font-bold text-slate-800">
+                                        {result.policy?.orgName || '—'}
+                                    </h3>
+                                    <div className="text-sm text-slate-600 mt-1">
+                                        {result.policy?.productName || result.systemMessage}
+                                    </div>
                                 </div>
                                 <div className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-bold border shadow-sm ${style.bg} ${style.text} ${style.border}`}>
                                     <i className={`fa-solid ${style.icon}`}></i>
-                                    {STATUS_MAP[status] || status}
+                                    {result.policy?.statusLabel || status}
                                 </div>
                             </div>
                         </div>
 
                         <div className="p-8">
-                            <dl className="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-7 mb-10">
-                                <div>
-                                    <dt className="text-xs uppercase tracking-wider text-slate-500 font-bold mb-1">保单号</dt>
-                                    <dd className="font-mono text-xl font-semibold text-slate-800">{result.id}</dd>
-                                </div>
-                                <div>
-                                    <dt className="text-xs uppercase tracking-wider text-slate-500 font-bold mb-1">投保人/管理人</dt>
-                                    <dd className="text-lg text-slate-800">{result.holder}</dd>
-                                </div>
-                                <div>
-                                    <dt className="text-xs uppercase tracking-wider text-slate-500 font-bold mb-1">保险止期</dt>
-                                    <dd className="font-mono text-lg text-slate-800">{result.expiryDate}</dd>
-                                </div>
-                            </dl>
+                            {result.policy && (
+                                <dl className="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-7 mb-10">
+                                    <div>
+                                        <dt className="text-xs uppercase tracking-wider text-slate-500 font-bold mb-1">保单号</dt>
+                                        <dd className="font-mono text-xl font-semibold text-slate-800">{result.policy.policyNo}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-xs uppercase tracking-wider text-slate-500 font-bold mb-1">保险起止</dt>
+                                        <dd className="font-mono text-lg text-slate-800">
+                                            {result.policy.startDate} → {result.policy.endDate}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-xs uppercase tracking-wider text-slate-500 font-bold mb-1">组织名称</dt>
+                                        <dd className="text-lg text-slate-800">{result.policy.orgName}</dd>
+                                    </div>
+                                </dl>
+                            )}
 
-                            {coverages.length > 0 && (
+                            {result.coverages && result.coverages.length > 0 && (
                                 <div className="mb-10">
                                     <h4 className="text-sm uppercase tracking-wider text-slate-500 font-bold mb-4">承保明细</h4>
                                     <div className="border border-slate-100 rounded-xl overflow-hidden">
@@ -250,31 +254,19 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
                                             <thead className="bg-slate-50 text-slate-600">
                                                 <tr>
                                                     <th className="px-6 py-3.5 text-left font-medium">险种</th>
-                                                    <th className="px-6 py-3.5 text-left font-medium">保额/限额</th>
-                                                    <th className="px-6 py-3.5 text-right font-medium">保费(元)</th>
+                                                    <th className="px-6 py-3.5 text-left font-medium">保额</th>
+                                                    <th className="px-6 py-3.5 text-right font-medium">单位</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
-                                                {coverages.map((item, i) => (
+                                                {result.coverages.map((item, i) => (
                                                     <tr key={i} className="hover:bg-slate-50/60 transition-colors">
                                                         <td className="px-6 py-4 text-slate-800">{item.name}</td>
-                                                        <td className="px-6 py-4 text-slate-600">{item.amount}</td>
-                                                        <td className="px-6 py-4 text-right font-mono text-emerald-700 font-medium">
-                                                            {item.premium.toLocaleString()}
-                                                        </td>
+                                                        <td className="px-6 py-4 text-slate-600">{item.amount.toLocaleString()}</td>
+                                                        <td className="px-6 py-4 text-right text-slate-600">{item.unit || '元'}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>
-                                            <tfoot className="bg-emerald-50/40">
-                                                <tr>
-                                                    <td colSpan={2} className="px-6 py-4 text-right font-bold text-emerald-800">
-                                                        合计保费
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right font-bold font-mono text-emerald-800">
-                                                        ¥{coverages.reduce((s, c) => s + c.premium, 0).toLocaleString()}
-                                                    </td>
-                                                </tr>
-                                            </tfoot>
                                         </table>
                                     </div>
                                 </div>
@@ -288,7 +280,7 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
                                     <div className="relative">
                                         <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-0 justify-between">
                                             <div className="flex-1 text-center">
-                                                <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center text-white font-bold text-lg mb-3 ${status === 'Active' ? 'bg-emerald-600' : 'bg-slate-300'
+                                                <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center text-white font-bold text-lg mb-3 ${status === 'ACTIVE' ? 'bg-emerald-600' : 'bg-slate-300'
                                                     }`}>
                                                     1
                                                 </div>
@@ -303,13 +295,13 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
                                             </div>
 
                                             <div className="flex-1 text-center">
-                                                <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center text-white font-bold text-lg mb-3 ${status === 'InAmendment' ? 'bg-amber-600' : status === 'Active' ? 'bg-emerald-600' : 'bg-slate-300'
+                                                <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center text-white font-bold text-lg mb-3 ${status === 'PENDING' ? 'bg-amber-600' : status === 'ACTIVE' ? 'bg-emerald-600' : 'bg-slate-300'
                                                     }`}>
                                                     2
                                                 </div>
                                                 <div className="text-sm font-medium">保全/批改处理</div>
                                                 <div className="text-xs text-slate-500 mt-1">
-                                                    {status === 'InAmendment' ? '当前阶段' : status === 'Active' ? '已完成' : '未进入'}
+                                                    {status === 'PENDING' ? '当前阶段' : status === 'ACTIVE' ? '已完成' : '未进入'}
                                                 </div>
                                             </div>
 
@@ -320,13 +312,13 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
                                             </div>
 
                                             <div className="flex-1 text-center">
-                                                <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center text-white font-bold text-lg mb-3 ${status === 'Active' ? 'bg-emerald-600' : 'bg-slate-300'
+                                                <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center text-white font-bold text-lg mb-3 ${status === 'ACTIVE' ? 'bg-emerald-600' : 'bg-slate-300'
                                                     }`}>
                                                     3
                                                 </div>
                                                 <div className="text-sm font-medium">保单生效</div>
                                                 <div className="text-xs text-slate-500 mt-1">
-                                                    {status === 'Active' ? '当前阶段' : '待生效'}
+                                                    {status === 'ACTIVE' ? '当前阶段' : '待生效'}
                                                 </div>
                                             </div>
                                         </div>
@@ -336,15 +328,18 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
                         </div>
 
                         <div className="bg-slate-50 px-8 py-5 border-t flex flex-wrap justify-end gap-4">
-                            <button
-                                type="button"
-                                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors shadow-sm flex items-center gap-2"
-                            >
-                                <i className="fa-solid fa-file-pdf"></i>
-                                下载电子保单
-                            </button>
+                            {result.documents?.electronicPolicyAvailable && (
+                                <button
+                                    type="button"
+                                    disabled={!result.documents.pdfUrl}
+                                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <i className="fa-solid fa-file-pdf"></i>
+                                    下载电子保单
+                                </button>
+                            )}
 
-                            {status === 'Active' && (
+                            {allowExtension && status === 'ACTIVE' && (
                                 <button
                                     type="button"
                                     onClick={() => setShowPreservationMenu(!showPreservationMenu)}
@@ -356,31 +351,22 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
                             )}
                         </div>
 
-                        {showPreservationMenu && status === 'Active' && (
+                        {showPreservationMenu && status === 'ACTIVE' && (
                             <div className="border-t border-slate-200 bg-slate-50/70 px-8 py-6">
                                 <h4 className="text-base font-bold text-slate-800 mb-5">保单保全服务</h4>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                    <button
-                                        disabled
-                                        className="p-4 bg-white border border-slate-200 rounded-xl text-left hover:border-slate-300 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                                    >
+                                    <button disabled className="p-4 bg-white border border-slate-200 rounded-xl text-left disabled:opacity-60 disabled:cursor-not-allowed">
                                         <div className="font-medium text-slate-800">申请保单保全</div>
                                         <div className="text-xs text-slate-500 mt-1">新增/变更/删除保障项目</div>
                                     </button>
 
-                                    <button
-                                        disabled
-                                        className="p-4 bg-white border border-slate-200 rounded-xl text-left hover:border-slate-300 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                                    >
+                                    <button disabled className="p-4 bg-white border border-slate-200 rounded-xl text-left disabled:opacity-60 disabled:cursor-not-allowed">
                                         <div className="font-medium text-slate-800">保单保全申请记录</div>
                                         <div className="text-xs text-slate-500 mt-1">查看历史保全申请</div>
                                     </button>
 
-                                    <button
-                                        disabled
-                                        className="p-4 bg-white border border-slate-200 rounded-xl text-left hover:border-slate-300 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                                    >
+                                    <button disabled className="p-4 bg-white border border-slate-200 rounded-xl text-left disabled:opacity-60 disabled:cursor-not-allowed">
                                         <div className="font-medium text-slate-800">查看保全及批改审核进度</div>
                                         <div className="text-xs text-slate-500 mt-1">实时跟踪处理状态</div>
                                     </button>
@@ -393,6 +379,60 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
                         )}
                     </section>
                 )}
+
+                <section className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+                    <div className="px-8 py-6 bg-slate-50 border-b border-slate-100">
+                        <h2 className="text-xl font-bold text-slate-800">常见问题说明</h2>
+                        <p className="text-sm text-slate-500 mt-1">
+                            系统权威解答，仅供参考，以核验结果为准
+                        </p>
+                    </div>
+
+                    <div className="divide-y divide-slate-100">
+                        {FAQ_CONFIG.map((faq) => (
+                            <div key={faq.id} className="px-8">
+                                <button
+                                    onClick={() => toggleFAQ(faq.id)}
+                                    className="w-full py-5 flex justify-between items-center text-left hover:bg-slate-50 transition-colors"
+                                >
+                                    <span className="font-medium text-slate-800">{faq.title}</span>
+                                    <i className={`fa-solid ${expandedFAQ === faq.id ? 'fa-chevron-up' : 'fa-chevron-down'} text-slate-500 transition-transform`}></i>
+                                </button>
+
+                                {expandedFAQ === faq.id && (
+                                    <div className="pb-6 animate-fade-in">
+                                        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
+                                            <p className="font-bold text-emerald-800 text-lg leading-relaxed">
+                                                {faq.response.layer1_authoritative}
+                                            </p>
+                                        </div>
+
+                                        <div className="mb-6">
+                                            <ul className="space-y-3 text-slate-700">
+                                                {faq.response.layer2_explanation.map((item, idx) => (
+                                                    <li key={idx} className="flex items-start gap-3">
+                                                        <span className="text-emerald-600 mt-1 text-lg">•</span>
+                                                        <span>{item}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+
+                                        {faq.response.layer3_action.type === 'internal_link' && (
+                                            <a
+                                                href={faq.response.layer3_action.target}
+                                                className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors shadow-sm"
+                                            >
+                                                <i className="fa-solid fa-arrow-right"></i>
+                                                {faq.response.layer3_action.label}
+                                            </a>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </section>
 
                 {!result && !loading && !error && (
                     <div className="text-center py-24 text-slate-400">

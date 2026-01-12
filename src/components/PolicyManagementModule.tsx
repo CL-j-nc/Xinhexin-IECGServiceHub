@@ -18,7 +18,7 @@ const INSURANCE_DICT = [
 
 const PolicyManagementModule: React.FC = () => {
   const [formData, setFormData] = useState<PolicyData>({
-    id: 'POL-' + Math.floor(1000 + Math.random() * 9000), // Auto-generate random ID for convenience
+    id: '66' + Math.floor(1000 + Math.random() * 9000), // Auto-generate random ID for convenience
     companyName: '',
     holder: '',
     status: 'Active',
@@ -79,8 +79,8 @@ const PolicyManagementModule: React.FC = () => {
                   setFormData(prev => ({
                       ...prev,
                       ...extractedData,
-                      // Ensure ID starts with POL- if AI missed it, or keep random if AI failed ID
-                      id: extractedData.id?.startsWith('POL-') ? extractedData.id : prev.id,
+                      // Ensure ID starts with 66 if AI missed it, or keep random if AI failed ID
+                      id: extractedData.id?.startsWith('66') ? extractedData.id : prev.id,
                       // Default to Active if not found
                       status: 'Active' 
                   }));
@@ -137,8 +137,8 @@ const PolicyManagementModule: React.FC = () => {
     e.preventDefault();
     
     // 1. Validate ID
-    if (!formData.id.startsWith('POL-') || formData.id.length <= 4) {
-        setMsg({type: 'error', text: '保单号无效，必须以 POL- 开头且包含数字'});
+    if (!formData.id.startsWith('66') || formData.id.length <= 4) {
+        setMsg({type: 'error', text: '保单号无效，必须以 66 开头且包含数字'});
         return;
     }
     
@@ -163,7 +163,7 @@ const PolicyManagementModule: React.FC = () => {
         loadPolicies();
         // Reset form but keep ID prefix for next entry
         setFormData({
-            id: 'POL-' + Math.floor(1000 + Math.random() * 9000),
+            id: '66' + Math.floor(1000 + Math.random() * 9000),
             companyName: '',
             holder: '',
             status: 'Active',

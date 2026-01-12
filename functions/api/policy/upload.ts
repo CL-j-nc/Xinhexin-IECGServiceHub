@@ -1,8 +1,9 @@
 // functions/api/policy/upload.ts
-import type { PagesFunction } from '@cloudflare/workers-types';
+interface Env {}
 
-export const onRequestPost: PagesFunction = async ({ request }) => {
+export const onRequestPost: PagesFunction<Env> = async (context) => {
     try {
+        const { request } = context;
 
         if (request.method !== 'POST') {
             return new Response('Method Not Allowed', { status: 405 });

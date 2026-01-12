@@ -5,14 +5,26 @@ export const verifyPolicy = async (policyNo: string): Promise<PolicyVerifyResult
   // 模拟延迟，体现真实接口调用感
   await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 700));
 
+  const normalizedPolicyNo = policyNo.trim();
+  const isValidPolicyNo = /^(65|66)\d+$/.test(normalizedPolicyNo);
+
+  if (!isValidPolicyNo) {
+    return {
+      success: false,
+      status: 'NOT_FOUND',
+      systemMessage: '请输入正确的保单号',
+      allowBusinessExtension: false
+    };
+  }
+
   // mock 数据 - 未来替换为真实 D1 查询 + Worker 逻辑
   const mockData: Record<string, PolicyVerifyResult> = {
-    '6620250001': {
+    '66020250001': {
       success: true,
       status: 'ACTIVE',
       systemMessage: '核验通过，保单状态正常',
       policy: {
-        policyNo: '6620250001',
+        policyNo: '66020250001',
         orgName: '广州迅捷物流有限公司',
         productName: '团体商业车险（含三者1000万）',
         startDate: '2025-01-01',
@@ -28,15 +40,15 @@ export const verifyPolicy = async (policyNo: string): Promise<PolicyVerifyResult
       allowBusinessExtension: true,
       documents: {
         electronicPolicyAvailable: true,
-        pdfUrl: '/api/documents/6620250001.pdf' // 占位，未来真实路径
+        pdfUrl: '/api/documents/66020250001.pdf' // 占位，未来真实路径
       }
     },
-    '6620240099': {
+    '66020240099': {
       success: true,
       status: 'EXPIRED',
       systemMessage: '保单已过期',
       policy: {
-        policyNo: '6620240099',
+        policyNo: '66020240099',
         orgName: '华南建材集团',
         productName: '车辆综合险（旧版）',
         startDate: '2024-01-01',
@@ -49,15 +61,15 @@ export const verifyPolicy = async (policyNo: string): Promise<PolicyVerifyResult
       allowBusinessExtension: false,
       documents: {
         electronicPolicyAvailable: true,
-        pdfUrl: '/api/documents/6620240099.pdf'
+        pdfUrl: '/api/documents/66020240099.pdf'
       }
     },
-    '6620250987': {
+    '66020250987': {
       success: true,
       status: 'PENDING',
       systemMessage: '保单保全处理中',
       policy: {
-        policyNo: '6620250987',
+        policyNo: '66020250987',
         orgName: '深港跨境物流有限公司',
         productName: '车队综合险',
         startDate: '2025-09-01',
@@ -72,7 +84,7 @@ export const verifyPolicy = async (policyNo: string): Promise<PolicyVerifyResult
     }
   };
 
-  const found = mockData[policyNo.toUpperCase()];
+  const found = mockData[normalizedPolicyNo];
 
   if (found) {
     return found;

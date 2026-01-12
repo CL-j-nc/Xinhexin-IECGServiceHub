@@ -44,10 +44,10 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
     const [showPreservationMenu, setShowPreservationMenu] = useState(false);
     const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
 
-    const validateFormat = (id: string) => /^66[0-9]{4,10}$/i.test(id.trim());
+    const validateFormat = (id: string) => /^(65|66)\d+$/.test(id.trim());
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value.toUpperCase();
+        const val = e.target.value;
         setPolicyId(val);
 
         const isValid = validateFormat(val);
@@ -73,7 +73,7 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
         }
 
         if (!validateFormat(trimmed)) {
-            setError('保单号格式错误，应为 66 后接4至10位数字');
+            setError('保单号格式错误，应以 65 或 66 开头，后接数字');
             setFormatValid(false);
             return;
         }

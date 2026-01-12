@@ -9,7 +9,7 @@ export const queryPolicyDatabase = async (policyId: string): Promise<PolicyData 
   // Simulate network latency
   await new Promise(resolve => setTimeout(resolve, 500));
   
-  const formattedId = policyId.toUpperCase().trim();
+  const formattedId = policyId.trim();
   return inMemoryDb[formattedId] || null;
 };
 

@@ -1,41 +1,36 @@
-// functions/api/policy/upload.ts （保持不变，仅删除 import）
+// functions/api/policy/upload.ts
+import type { PagesFunction } from '@cloudflare/workers-types';
 
-export const onRequestPost = async (context: any) => {
+export const onRequestPost: PagesFunction = async ({ request }) => {
     try {
-        const { request } = context;
 
         if (request.method !== 'POST') {
             return new Response('Method Not Allowed', { status: 405 });
         }
 
         const formData = await request.formData();
-        const file = formData.get('file') as File | null;
-        const policyNo = formData.get('policyNo') as string | null;
+        const file = formData.get('file');
+        const policyNo = formData.get('policyNo');
 
-        if (!file || !(file instanceof File) || file.type !== 'application/pdf') {
-            return Response.json({ error: '请上传有效的 PDF 文件' }, { status: 400 });
+        if (!file || !policyNo) {
+            return new Response(JSON.stringify({ error: '缺少文件或保单号' }), { status: 400 });
         }
 
-        if (!policyNo || typeof policyNo !== 'string' || !/^(65|66)\d+$/.test(policyNo.trim())) {
-            return Response.json({ error: '缺少或无效的保单号' }, { status: 400 });
+        if (typeof policyNo !== 'string' || !/^(65|66)\d+$/.test(policyNo.trim())) {
+            return new Response(JSON.stringify({ error: '无效保单号' }), { status: 400 });
         }
 
-        // mock URL（未来替换为 R2 真实路径）
-        const mockPdfUrl = `/mock-pdfs/${policyNo.trim().toUpperCase()}-${Date.now()}.pdf`;
+        // 当前 mock 存储（未来上传 R2）
+        const mockUrl = `/mock/uploads/${policyNo.trim()}-${Date.now()}.pdf`;
 
-        return Response.json(
-            {
-                success: true,
-                message: '上传成功（当前为模拟存储）',
-                pdfUrl: mockPdfUrl,
-                policyNo: policyNo.trim().toUpperCase(),
-                fileName: file.name,
-                size: file.size
-            },
-            { status: 200 }
-        );
+        return new Response(JSON.stringify({
+            success: true,
+            pdfUrl: mockUrl,
+            policyNo: policyNo.trim(),
+            fileName: file.name,
+            size: file.size
+        }), { status: 200 });
     } catch (err) {
-        console.error(err);
-        return Response.json({ error: '文件上传处理失败' }, { status: 500 });
+        return new Response(JSON.stringify({ error: '上传失败' }), { status: 500 });
     }
 };

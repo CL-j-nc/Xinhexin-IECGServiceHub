@@ -19,9 +19,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     const policyNo = policyNoRaw.trim().toUpperCase();
 
+    // 保单号规则：机动车业务常见为 65/66 开头 + 数字
     if (!/^(65|66)\d+$/.test(policyNo)) {
         return new Response(
-            JSON.stringify({ success: false, message: '保单号格式错误' }),
+            JSON.stringify({ success: false, message: '保单号格式错误（需为65或66开头的数字）' }),
             { status: 400, headers: { 'Content-Type': 'application/json' } }
         );
     }

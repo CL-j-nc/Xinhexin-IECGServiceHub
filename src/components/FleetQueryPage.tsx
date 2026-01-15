@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { verifyPolicy } from '../services/policyEngine';
-import { PolicyVerifyResult } from '../services/policyEngine.types.ts';
-import { FAQ_CONFIG } from '../constants/faq.config';
+import { verifyPolicy } from '../services/policyEngine'; // 假设已重命名/调整为 policyEngine
+import { PolicyVerifyResult } from '../services/policyEngine.types'; // 如有类型文件则导入，否则内联
 
 interface FleetQueryPageProps {
     onBack: () => void;
@@ -73,7 +72,7 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
         }
 
         if (!validateFormat(trimmed)) {
-            setError('保单号格式错误，应以 65 或 66 开头，后接数字');
+            setError('保单号格式错误，应以65或66开头后接数字');
             setFormatValid(false);
             return;
         }
@@ -84,6 +83,7 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
         setShowStatusFlow(false);
         setShowPreservationMenu(false);
 
+        // 模拟延迟
         await new Promise(r => setTimeout(r, 1200 + Math.random() * 800));
 
         try {
@@ -132,262 +132,172 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
                     <i className="fa-solid fa-arrow-left text-lg"></i>
                 </button>
                 <div>
-                    <h1 className="text-xl font-bold tracking-wide">保单真实性核验</h1>
-                    <p className="text-xs text-emerald-200/90">大宗团体商业车险系统</p>
+                    <h1 className="text-xl font-bold">保单真实性核验</h1>
+                    <p className="text-xs opacity-80 mt-0.5">输入保单号进行系统核验</p>
                 </div>
             </header>
 
-            <main className="flex-1 container mx-auto px-5 py-8 max-w-4xl">
-                <section className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 mb-10">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-1">保单状态核验</h2>
-                    <p className="text-slate-500 mb-8 text-[15px]">
-                        输入保单号进行系统实时校验
-                    </p>
-
-                    <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1 relative">
-                            <i className={`fa-solid fa-hashtag absolute left-4 top-1/2 -translate-y-1/2 ${formatValid === null ? 'text-slate-400' :
-                                formatValid ? 'text-emerald-500' : 'text-red-500'
-                                } pointer-events-none transition-colors`}></i>
+            <main className="flex-1 container mx-auto px-6 py-12 max-w-3xl">
+                <section className="bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
+                    <form onSubmit={handleSubmit}>
+                        <div className="relative">
+                            <i className="fa-solid fa-hashtag absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
                             <input
                                 type="text"
                                 value={policyId}
                                 onChange={handleChange}
-                                placeholder="6612345678"
-                                maxLength={16}
-                                autoComplete="off"
-                                className={`
-                  w-full pl-12 pr-5 py-4 rounded-xl border text-lg font-mono tracking-wide
-                  focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 focus:bg-white
-                  transition-all duration-200
-                  ${formatValid === false && policyId ? 'border-red-400 bg-red-50/30' : 'border-slate-200 bg-slate-50'}
-                  disabled:opacity-60
-                `}
-                                disabled={loading}
+                                placeholder="# 660120120251102555668"
+                                className={`w-full pl-12 pr-4 py-4 rounded-xl border transition-all outline-none
+                  ${formatValid === false ? 'border-rose-300 bg-rose-50 focus:ring-2 focus:ring-rose-300' : ''}
+                  ${formatValid === true ? 'border-emerald-300 bg-emerald-50 focus:ring-2 focus:ring-emerald-300' : 'border-slate-200 focus:ring-2 focus:ring-emerald-500'}`}
                             />
                         </div>
-
                         <button
                             type="submit"
                             disabled={loading || !policyId.trim() || formatValid === false}
-                            className={`
-                min-w-[140px] px-8 py-4 rounded-xl font-bold text-white
-                flex items-center justify-center gap-2.5 shadow-md transition-all
-                ${loading
-                                    ? 'bg-emerald-700/60 cursor-wait'
-                                    : 'bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900'}
-                disabled:opacity-55 cursor-not-allowed
-              `}
+                            className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            {loading ? (
-                                <>
-                                    <i className="fa-solid fa-circle-notch fa-spin"></i>
-                                    核验中
-                                </>
-                            ) : (
-                                <>
-                                    <i className="fa-solid fa-shield-check"></i>
-                                    核验
-                                </>
-                            )}
+                            {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : null}
+                            {loading ? '核验中...' : '核验'}
                         </button>
                     </form>
 
                     {error && (
-                        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 flex items-start gap-3 text-sm">
+                        <div className="mt-4 bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-700 flex items-start gap-3">
                             <i className="fa-solid fa-triangle-exclamation mt-0.5"></i>
                             <div>
-                                <div className="font-semibold">核验未通过</div>
-                                <div>{error}</div>
+                                <div className="font-medium">核验失败</div>
+                                <div className="text-sm">{error}</div>
                             </div>
                         </div>
                     )}
                 </section>
 
+                {loading && (
+                    <div className="mt-8 text-center py-12 bg-white rounded-2xl shadow-xl border border-slate-100">
+                        <i className="fa-solid fa-spinner fa-spin text-4xl text-emerald-500 mb-4"></i>
+                        <p className="text-slate-700 font-medium">系统核验中...</p>
+                    </div>
+                )}
+
                 {result && (
-                    <section className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden mb-10">
-                        <div className={`px-8 py-6 ${style.bg} border-b ${style.border}`}>
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <section className="mt-8 space-y-8">
+                        <div className={`rounded-2xl border ${style.border} overflow-hidden shadow-xl`}>
+                            <div className={`px-8 py-6 ${style.bg} flex items-center gap-4`}>
+                                <i className={`fa-solid ${style.icon} text-2xl ${style.text}`}></i>
                                 <div>
-                                    <div className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-1">
-                                        核验结果 · {new Date().toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                    <h2 className={`text-xl font-bold ${style.text}`}>{result.systemMessage}</h2>
+                                    <p className="text-sm opacity-80">状态码: {result.status}</p>
+                                </div>
+                            </div>
+                            <div className="bg-white divide-y divide-slate-100">
+                                <div className="px-8 py-5 grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase">保单号</label>
+                                        <p className="font-mono text-slate-800">{result.policy?.policyNo}</p>
                                     </div>
-                                    <h3 className="text-2xl font-bold text-slate-800">
-                                        {result.policy?.orgName || '—'}
-                                    </h3>
-                                    <div className="text-sm text-slate-600 mt-1">
-                                        {result.policy?.productName || result.systemMessage}
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase">状态</label>
+                                        <p className="text-slate-800">{result.policy?.statusLabel}</p>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="text-xs text-slate-500 uppercase">投保企业</label>
+                                        <p className="text-slate-800 font-medium">{result.policy?.orgName}</p>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase">生效日期</label>
+                                        <p className="text-slate-800">{result.policy?.startDate}</p>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase">到期日期</label>
+                                        <p className="text-slate-800">{result.policy?.endDate}</p>
                                     </div>
                                 </div>
-                                <div className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-bold border shadow-sm ${style.bg} ${style.text} ${style.border}`}>
-                                    <i className={`fa-solid ${style.icon}`}></i>
-                                    {result.policy?.statusLabel || status}
-                                </div>
+                                {result.coverages?.length > 0 && (
+                                    <div className="px-8 py-5">
+                                        <label className="text-xs text-slate-500 uppercase block mb-2">保障项目</label>
+                                        <div className="space-y-2">
+                                            {result.coverages.map((cov, idx) => (
+                                                <div key={idx} className="flex justify-between text-sm">
+                                                    <span className="text-slate-700">{cov.name}</span>
+                                                    <span className="text-slate-800 font-mono">{cov.amount} {cov.unit}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {result.documents?.electronicPolicyAvailable && result.documents.pdfUrl && (
+                                    <div className="px-8 py-5">
+                                        <label className="text-xs text-slate-500 uppercase block mb-2">电子保单</label>
+                                        <a
+                                            href={result.documents.pdfUrl}
+                                            download
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors"
+                                        >
+                                            <i className="fa-solid fa-download"></i>
+                                            下载 PDF
+                                        </a>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        <div className="p-8">
-                            {result.policy && (
-                                <dl className="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-7 mb-10">
-                                    <div>
-                                        <dt className="text-xs uppercase tracking-wider text-slate-500 font-bold mb-1">保单号</dt>
-                                        <dd className="font-mono text-xl font-semibold text-slate-800">{result.policy.policyNo}</dd>
-                                    </div>
-                                    <div>
-                                        <dt className="text-xs uppercase tracking-wider text-slate-500 font-bold mb-1">保险起止</dt>
-                                        <dd className="font-mono text-lg text-slate-800">
-                                            {result.policy.startDate} → {result.policy.endDate}
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt className="text-xs uppercase tracking-wider text-slate-500 font-bold mb-1">组织名称</dt>
-                                        <dd className="text-lg text-slate-800">{result.policy.orgName}</dd>
-                                    </div>
-                                </dl>
-                            )}
-
-                            {result.coverages && result.coverages.length > 0 && (
-                                <div className="mb-10">
-                                    <h4 className="text-sm uppercase tracking-wider text-slate-500 font-bold mb-4">承保明细</h4>
-                                    <div className="border border-slate-100 rounded-xl overflow-hidden">
-                                        <table className="w-full text-sm">
-                                            <thead className="bg-slate-50 text-slate-600">
-                                                <tr>
-                                                    <th className="px-6 py-3.5 text-left font-medium">险种</th>
-                                                    <th className="px-6 py-3.5 text-left font-medium">保额</th>
-                                                    <th className="px-6 py-3.5 text-right font-medium">单位</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {result.coverages.map((item, i) => (
-                                                    <tr key={i} className="hover:bg-slate-50/60 transition-colors">
-                                                        <td className="px-6 py-4 text-slate-800">{item.name}</td>
-                                                        <td className="px-6 py-4 text-slate-600">{item.amount.toLocaleString()}</td>
-                                                        <td className="px-6 py-4 text-right text-slate-600">{item.unit || '元'}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            )}
-
-                            {showStatusFlow && (
-                                <div className="mt-8 pt-8 border-t border-slate-100">
-                                    <h4 className="text-sm uppercase tracking-wider text-slate-500 font-bold mb-5">
-                                        当前所处阶段
-                                    </h4>
-                                    <div className="relative">
-                                        <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-0 justify-between">
-                                            <div className="flex-1 text-center">
-                                                <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center text-white font-bold text-lg mb-3 ${status === 'ACTIVE' ? 'bg-emerald-600' : 'bg-slate-300'
-                                                    }`}>
-                                                    1
-                                                </div>
-                                                <div className="text-sm font-medium">核保通过</div>
-                                                <div className="text-xs text-slate-500 mt-1">已完成</div>
-                                            </div>
-
-                                            <div className="hidden md:block flex-1 h-0.5 bg-slate-200 relative top-7">
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                    <i className="fa-solid fa-arrow-right text-slate-400"></i>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex-1 text-center">
-                                                <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center text-white font-bold text-lg mb-3 ${status === 'PENDING' ? 'bg-amber-600' : status === 'ACTIVE' ? 'bg-emerald-600' : 'bg-slate-300'
-                                                    }`}>
-                                                    2
-                                                </div>
-                                                <div className="text-sm font-medium">保全/批改处理</div>
-                                                <div className="text-xs text-slate-500 mt-1">
-                                                    {status === 'PENDING' ? '当前阶段' : status === 'ACTIVE' ? '已完成' : '未进入'}
-                                                </div>
-                                            </div>
-
-                                            <div className="hidden md:block flex-1 h-0.5 bg-slate-200 relative top-7">
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                    <i className="fa-solid fa-arrow-right text-slate-400"></i>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex-1 text-center">
-                                                <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center text-white font-bold text-lg mb-3 ${status === 'ACTIVE' ? 'bg-emerald-600' : 'bg-slate-300'
-                                                    }`}>
-                                                    3
-                                                </div>
-                                                <div className="text-sm font-medium">保单生效</div>
-                                                <div className="text-xs text-slate-500 mt-1">
-                                                    {status === 'ACTIVE' ? '当前阶段' : '待生效'}
-                                                </div>
-                                            </div>
+                        {showStatusFlow && (
+                            <div className="bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
+                                <h2 className="text-xl font-bold text-slate-800 mb-6">保单状态流程</h2>
+                                <div className="relative">
+                                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-200"></div>
+                                    <div className="space-y-6 pl-10">
+                                        <div className="relative">
+                                            <div className="absolute left-[-30px] top-1/2 -translate-y-1/2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs">1</div>
+                                            <p className="font-medium">投保申请提交</p>
+                                            <p className="text-sm text-slate-500">系统记录初始信息</p>
+                                        </div>
+                                        <div className="relative">
+                                            <div className="absolute left-[-30px] top-1/2 -translate-y-1/2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs">2</div>
+                                            <p className="font-medium">核保审核</p>
+                                            <p className="text-sm text-slate-500">风险评估与确认</p>
+                                        </div>
+                                        <div className="relative">
+                                            <div className="absolute left-[-30px] top-1/2 -translate-y-1/2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs">3</div>
+                                            <p className="font-medium">保单生效</p>
+                                            <p className="text-sm text-slate-500">保障正式启动</p>
                                         </div>
                                     </div>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
 
-                        <div className="bg-slate-50 px-8 py-5 border-t flex flex-wrap justify-end gap-4">
-                            {result.documents?.electronicPolicyAvailable && (
-                                <button
-                                    type="button"
-                                    disabled={!result.documents.pdfUrl}
-                                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <i className="fa-solid fa-file-pdf"></i>
-                                    下载电子保单
-                                </button>
-                            )}
-
-                            {allowExtension && status === 'ACTIVE' && (
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPreservationMenu(!showPreservationMenu)}
-                                    className="px-6 py-2.5 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors shadow-sm flex items-center gap-2"
-                                >
-                                    <i className="fa-solid fa-file-signature"></i>
-                                    保单保全
-                                </button>
-                            )}
-                        </div>
-
-                        {showPreservationMenu && status === 'ACTIVE' && (
-                            <div className="border-t border-slate-200 bg-slate-50/70 px-8 py-6">
-                                <h4 className="text-base font-bold text-slate-800 mb-5">保单保全服务</h4>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        {allowExtension && (
+                            <section className="bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
+                                <h2 className="text-xl font-bold text-slate-800 mb-6">保全与批改</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                     <button disabled className="p-4 bg-white border border-slate-200 rounded-xl text-left disabled:opacity-60 disabled:cursor-not-allowed">
-                                        <div className="font-medium text-slate-800">申请保单保全</div>
-                                        <div className="text-xs text-slate-500 mt-1">新增/变更/删除保障项目</div>
+                                        <div className="font-medium text-slate-800">提交保全申请</div>
+                                        <div className="text-xs text-slate-500 mt-1">新增 / 变更 / 删除保障项目</div>
                                     </button>
-
                                     <button disabled className="p-4 bg-white border border-slate-200 rounded-xl text-left disabled:opacity-60 disabled:cursor-not-allowed">
                                         <div className="font-medium text-slate-800">保单保全申请记录</div>
                                         <div className="text-xs text-slate-500 mt-1">查看历史保全申请</div>
                                     </button>
-
                                     <button disabled className="p-4 bg-white border border-slate-200 rounded-xl text-left disabled:opacity-60 disabled:cursor-not-allowed">
                                         <div className="font-medium text-slate-800">查看保全及批改审核进度</div>
                                         <div className="text-xs text-slate-500 mt-1">实时跟踪处理状态</div>
                                     </button>
                                 </div>
-
                                 <div className="bg-slate-100 border border-slate-200 rounded-xl p-5 text-sm text-slate-700">
                                     <p>该保单暂无保全或批改记录。</p>
                                 </div>
-                            </div>
+                            </section>
                         )}
                     </section>
                 )}
 
-                <section className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+                <section className="mt-8 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
                     <div className="px-8 py-6 bg-slate-50 border-b border-slate-100">
                         <h2 className="text-xl font-bold text-slate-800">常见问题说明</h2>
-                        <p className="text-sm text-slate-500 mt-1">
-                            系统权威解答，仅供参考，以核验结果为准
-                        </p>
+                        <p className="text-sm text-slate-500 mt-1">系统权威解答，仅供参考，以核验结果为准</p>
                     </div>
-
                     <div className="divide-y divide-slate-100">
                         {FAQ_CONFIG.map((faq) => (
                             <div key={faq.id} className="px-8">
@@ -398,7 +308,6 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
                                     <span className="font-medium text-slate-800">{faq.title}</span>
                                     <i className={`fa-solid ${expandedFAQ === faq.id ? 'fa-chevron-up' : 'fa-chevron-down'} text-slate-500 transition-transform`}></i>
                                 </button>
-
                                 {expandedFAQ === faq.id && (
                                     <div className="pb-6 animate-fade-in">
                                         <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
@@ -406,7 +315,6 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
                                                 {faq.response.layer1_authoritative}
                                             </p>
                                         </div>
-
                                         <div className="mb-6">
                                             <ul className="space-y-3 text-slate-700">
                                                 {faq.response.layer2_explanation.map((item, idx) => (
@@ -417,7 +325,6 @@ const FleetQueryPage: React.FC<FleetQueryPageProps> = ({ onBack }) => {
                                                 ))}
                                             </ul>
                                         </div>
-
                                         {faq.response.layer3_action.type === 'internal_link' && (
                                             <a
                                                 href={faq.response.layer3_action.target}

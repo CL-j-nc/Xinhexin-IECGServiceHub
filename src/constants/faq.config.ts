@@ -35,7 +35,7 @@ export const FAQ_CONFIG: FAQItem[] = [
             layer3_action: {
                 type: 'internal_link',
                 label: '前往保单真实性核验',
-                target: '/fleet-query'
+                target: '/service-hub'
             }
         }
     },
@@ -53,7 +53,7 @@ export const FAQ_CONFIG: FAQItem[] = [
             layer3_action: {
                 type: 'internal_link',
                 label: '前往保单真实性核验',
-                target: '/fleet-query'
+                target: '/service-hub'
             }
         }
     },
@@ -71,7 +71,7 @@ export const FAQ_CONFIG: FAQItem[] = [
             layer3_action: {
                 type: 'internal_link',
                 label: '查看当前保单状态',
-                target: '/fleet-query'
+                target: '/service-hub'
             }
         }
     }

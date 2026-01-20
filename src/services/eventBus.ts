@@ -1,31 +1,58 @@
-import { Message } from '../types';
+import { ConversationMessage, MessageRole } from './conversation.types';
 
 // BroadcastChannel allows communication between different tabs/windows of the same origin.
-// This simulates a WebSocket connection for this serverless demo.
 const channel = new BroadcastChannel('cljhba_channel');
 
-type EventType = 'NEW_MESSAGE' | 'SUPERVISOR_INTERVENTION';
+type Listener = {
+  callback: (msg: ConversationMessage) => void;
+  conversationId?: string;
+};
+
+const listeners: Listener[] = [];
+
+type EventType = 'NEW_MESSAGE' | 'AGENT_INTERVENTION';
 
 interface Payload {
   type: EventType;
-  data: Message;
+  data: ConversationMessage;
 }
 
-export const broadcastMessage = (message: Message) => {
+export const broadcastMessage = (message: ConversationMessage) => {
   const payload: Payload = {
-    type: message.role === 'supervisor' ? 'SUPERVISOR_INTERVENTION' : 'NEW_MESSAGE',
+    type: message.role === MessageRole.AGENT ? 'AGENT_INTERVENTION' : 'NEW_MESSAGE',
     data: message
   };
   channel.postMessage(payload);
 };
 
-export const onBroadcastMessage = (callback: (msg: Message) => void) => {
-  channel.onmessage = (event) => {
-    const payload = event.data as Payload;
-    if (payload && payload.data) {
-      // Rehydrate Date object because JSON serialization turns it into a string
-      payload.data.timestamp = new Date(payload.data.timestamp);
-      callback(payload.data);
+channel.onmessage = (event) => {
+  const payload = event.data as Payload;
+  if (!payload || !payload.data) return;
+
+  const msg: ConversationMessage = {
+    ...payload.data,
+    timestamp: new Date(payload.data.timestamp)
+  };
+
+  listeners.forEach((listener) => {
+    if (listener.conversationId && msg.conversationId !== listener.conversationId) {
+      return;
+    }
+    listener.callback(msg);
+  });
+};
+
+export const onBroadcastMessage = (
+  callback: (msg: ConversationMessage) => void,
+  conversationId?: string
+) => {
+  const listener: Listener = { callback, conversationId };
+  listeners.push(listener);
+
+  return () => {
+    const index = listeners.indexOf(listener);
+    if (index >= 0) {
+      listeners.splice(index, 1);
     }
   };
 };

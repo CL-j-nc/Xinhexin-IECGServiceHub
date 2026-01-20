@@ -1,11 +1,16 @@
 // functions/api/policy/download.ts
-interface Env {
-    DB: D1Database;
-    POLICY_BUCKET: R2Bucket;
-}
+import type { Env } from './env';
 
-export const onRequestGet: PagesFunction<Env> = async (context) => {
+type PolicyFileRow = {
+    file_key: string | null;
+};
+
+export const onRequest: PagesFunction<Env> = async (context) => {
     const { request, env } = context;
+
+    if (request.method !== 'GET') {
+        return new Response('Method Not Allowed', { status: 405 });
+    }
 
     const url = new URL(request.url);
     const policyNoRaw = url.searchParams.get('policyNo');
@@ -17,12 +22,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         );
     }
 
-    const policyNo = policyNoRaw.trim().toUpperCase();
-
-    // 保单号规则：机动车业务常见为 65/66 开头 + 数字
-    if (!/^(65|66)\d+$/.test(policyNo)) {
+    const policyNo = policyNoRaw.trim();
+    if (!policyNo) {
         return new Response(
-            JSON.stringify({ success: false, message: '保单号格式错误（需为65或66开头的数字）' }),
+            JSON.stringify({ success: false, message: '缺少 policyNo 参数' }),
             { status: 400, headers: { 'Content-Type': 'application/json' } }
         );
     }
@@ -30,16 +33,16 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     try {
         // 查询 D1 获取 file_key
         const stmt = env.DB.prepare(`
-      SELECT file_key, electronic_policy_available
+      SELECT file_key
       FROM policies
       WHERE policy_no = ?
     `);
 
-        const { results } = await stmt.bind(policyNo).all();
+        const { results } = await stmt.bind(policyNo).all<PolicyFileRow>();
 
-        if (!results.length || !results[0].file_key || !results[0].electronic_policy_available) {
+        if (!results.length || !results[0].file_key) {
             return new Response(
-                JSON.stringify({ success: false, message: '电子保单不可用或未找到' }),
+                JSON.stringify({ success: false, message: '未找到对应文件' }),
                 { status: 404, headers: { 'Content-Type': 'application/json' } }
             );
         }

@@ -1,53 +1,48 @@
-// Helper to convert base64 to Uint8Array
-export function decode(base64: string): Uint8Array {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-}
+import { ConversationSession, ConversationMessage } from './conversation.types';
 
-// Helper to convert Uint8Array to base64
-export function encode(bytes: Uint8Array): string {
-  let binary = '';
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
+/**
+ * In-memory mock conversation store.
+ * Later can be replaced by D1 / KV / WebSocket backend.
+ */
+const conversationStore: Record<string, ConversationSession> = {};
 
-// Convert raw PCM data to AudioBuffer for playback
-export async function decodeAudioData(
-  data: Uint8Array,
-  ctx: AudioContext,
-  sampleRate: number,
-  numChannels: number,
-): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
-  const frameCount = dataInt16.length / numChannels;
-  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-
-  for (let channel = 0; channel < numChannels; channel++) {
-    const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-    }
-  }
-  return buffer;
-}
-
-// Convert Float32 input (microphone) to Int16 PCM for the API
-export function createPcmBlob(data: Float32Array): { data: string; mimeType: string } {
-  const l = data.length;
-  const int16 = new Int16Array(l);
-  for (let i = 0; i < l; i++) {
-    int16[i] = Math.max(-1, Math.min(1, data[i])) * 32768;
-  }
-  return {
-    data: encode(new Uint8Array(int16.buffer)),
-    mimeType: 'audio/pcm;rate=16000',
+/**
+ * Create a new conversation session
+ */
+export function createConversation(sessionId: string): ConversationSession {
+  const session: ConversationSession = {
+    sessionId,
+    createdAt: Date.now(),
+    messages: [],
+    status: 'ACTIVE',
   };
+  conversationStore[sessionId] = session;
+  return session;
+}
+
+/**
+ * Append a message to a conversation
+ */
+export function appendMessage(
+  sessionId: string,
+  message: ConversationMessage
+): ConversationSession | null {
+  const session = conversationStore[sessionId];
+  if (!session) return null;
+  session.messages.push(message);
+  return session;
+}
+
+/**
+ * Get a conversation session
+ */
+export function getConversation(sessionId: string): ConversationSession | null {
+  return conversationStore[sessionId] || null;
+}
+
+/**
+ * List all active conversations (for staff view)
+ */
+export function listConversations(): ConversationSession[] {
+  return Object.values(conversationStore);
 }

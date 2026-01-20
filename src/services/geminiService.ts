@@ -1,6 +1,11 @@
 import { PolicyData } from '../types';
+import type { GeminiResponse } from './gemini.types';
 
-const callGemini = async (userInput: string) => {
+interface AIResult {
+  candidates?: string[];
+}
+
+const callGemini = async (userInput: string): Promise<GeminiResponse> => {
   const response = await fetch("/api/gemini", {
     method: "POST",
     headers: {
@@ -16,14 +21,14 @@ const callGemini = async (userInput: string) => {
     }),
   });
 
-  return response.json();
+  return response.json() as Promise<GeminiResponse>;
 };
 
 export const sendMessageToGemini = async (userMessage: string): Promise<string> => {
   try {
     const result = await callGemini(userMessage);
-    const candidate = result?.candidates?.[0];
-    const text = candidate?.content?.parts?.[0]?.text ?? "（模型未返回有效内容）";
+    const candidate = (result as AIResult)?.candidates?.[0];
+    const text = candidate ?? "（模型未返回有效内容）";
     return text;
   } catch (error) {
     console.error("Gemini API Error:", error);
@@ -34,8 +39,8 @@ export const sendMessageToGemini = async (userMessage: string): Promise<string> 
 export const extractPolicyFromPdf = async (base64Pdf: string): Promise<Partial<PolicyData> | null> => {
   try {
     const result = await callGemini(`请解析这份PDF（Base64）并返回关键保单字段（JSON）：${base64Pdf}`);
-    const candidate = result?.candidates?.[0];
-    const text = candidate?.content?.parts?.[0]?.text;
+    const candidate = (result as AIResult)?.candidates?.[0];
+    const text = candidate;
 
     if (text) {
       return JSON.parse(text) as Partial<PolicyData>;

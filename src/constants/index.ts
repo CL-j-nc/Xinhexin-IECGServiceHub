@@ -6,7 +6,7 @@ export const RISK_WORDS = [
   'bribe', 'laundering', '赌博', '洗钱', '暴力', '诈骗', '黑客'
 ];
 
-// 2. Mock Database for "Read-Only" Commercial Fleet Policy Queries
+// 2. Mock Database for "Read-Only" Commercial Policy Queries
 export const MOCK_POLICY_DB: Record<string, PolicyData> = {
   '668888': {
     id: '668888',

@@ -1,13 +1,13 @@
 import React from 'react';
-import { Message, Role } from '../types';
+import { ConversationMessage, MessageRole } from '../services/conversation.types';
 
 interface ChatMessageProps {
-  message: Message;
+  message: ConversationMessage;
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
-  const isUser = message.role === Role.USER;
-  const isSupervisor = message.role === Role.SUPERVISOR;
+  const isUser = message.role === MessageRole.CLIENT;
+  const isSupervisor = message.role === MessageRole.AGENT;
   const isError = message.isError;
 
   return (

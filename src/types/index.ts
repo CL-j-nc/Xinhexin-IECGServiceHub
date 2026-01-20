@@ -1,18 +1,3 @@
-export enum Role {
-  USER = 'user',
-  MODEL = 'model',
-  SYSTEM = 'system',
-  SUPERVISOR = 'supervisor' // New Role for human agent
-}
-
-export interface Message {
-  id: string;
-  role: Role;
-  content: string;
-  timestamp: Date;
-  isError?: boolean;
-}
-
 export interface Coverage {
   name: string;   // 险种名称
   amount: string; // 保额 (支持 "50万", "足额" 等文本)
@@ -26,7 +11,7 @@ export interface PolicyData {
   status: 'Active' | 'Expired' | 'Pending';
   expiryDate: string;
   type: string; // Plan Name / Bundle Name
-  vehicleCount?: number; // Fleet size
+  vehicleCount?: number; // Vehicle count
   coverages?: Coverage[]; // Detailed coverage list
 }
 
@@ -44,4 +29,38 @@ export interface CoachingTip {
   category: 'TRUST' | 'RISK' | 'TACTIC' | 'INFO';
   content: string;
   priority: 'HIGH' | 'NORMAL';
+}
+
+export interface ClaimUpload {
+  id: string;
+  name: string;
+  url: string;
+}
+
+export interface ClaimFormData {
+  policyNo: string;
+  insuredEntity: string;
+  accidentType: string;
+  accidentDate: string;
+  accidentLocation: string;
+  accidentDescription: string;
+  reporterName: string;
+  reporterContact: string;
+  uploads: ClaimUpload[];
+}
+
+export interface ClaimRecord {
+  id: string;
+  date: string;
+  status: string;
+}
+
+export interface ClaimCreateResult {
+  id: string;
+  status: 'submitted';
+}
+
+export interface ClaimDetail {
+  id: string;
+  details: string;
 }

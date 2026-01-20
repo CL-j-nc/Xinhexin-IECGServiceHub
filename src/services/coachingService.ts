@@ -1,6 +1,11 @@
 import { CoachingTip } from '../types';
+import type { GeminiResponse } from './gemini.types';
 
-const callGemini = async (userInput: string) => {
+interface AIResult {
+  candidates?: string[];
+}
+
+const callGemini = async (userInput: string): Promise<GeminiResponse> => {
   const response = await fetch("/api/gemini", {
     method: "POST",
     headers: {
@@ -16,7 +21,7 @@ const callGemini = async (userInput: string) => {
     }),
   });
 
-  return response.json();
+  return response.json() as Promise<GeminiResponse>;
 };
 
 export const generateCoachingTip = async (transcript: string): Promise<CoachingTip | null> => {
@@ -25,8 +30,8 @@ export const generateCoachingTip = async (transcript: string): Promise<CoachingT
   try {
     const prompt = `Current Conversation Context: "${transcript}"\n\nGive me one strategic tip for the agent now. Return JSON with category, content, priority.`;
     const result = await callGemini(prompt);
-    const candidate = result?.candidates?.[0];
-    const text = candidate?.content?.parts?.[0]?.text ?? "（模型未返回有效内容）";
+    const candidate = (result as AIResult)?.candidates?.[0];
+    const text = candidate ?? "（模型未返回有效内容）";
 
     if (text) {
       const data = JSON.parse(text);

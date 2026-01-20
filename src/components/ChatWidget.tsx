@@ -13,7 +13,7 @@ const FAQ_QUESTIONS = [
   "我邮箱收到的电子保单是乱码",
   "我在网上查询的电子保单没有盖章",
   "我已经改了保单上的车牌，怎么电子保单上的牌照没有更改?",
-  "如何查询保单的缴费状态？"
+  "如何查询保单的缴费状态"
 
 ];
 
@@ -29,7 +29,7 @@ const TABS = ['平台功能', '车险理赔', '承保问题', '企业投保附�
 const ChatWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
-  const [viewState, setViewState] = useState<'Home' | 'chat'>('Home');
+  const [viewState, setViewState] = useState<'home' | 'chat'>('home');
   const [activeTab, setActiveTab] = useState('平台功能');
 
   const [input, setInput] = useState('');

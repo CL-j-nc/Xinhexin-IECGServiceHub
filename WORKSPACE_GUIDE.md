@@ -35,7 +35,6 @@
 - `services/geminiService.ts`：文本聊天逻辑，函数调用查询保单并回传模型。
 - `services/liveService.ts`：Gemini Live 音频会话、麦克风采集、音频播放、工具调用。
 - `services/coachingService.ts`：主管辅导提示生成，约束同一合规策略。
-- `services/audioUtils.ts`：音频编解码与 PCM 处理。
 - `index.html`：引入 Tailwind CDN、Font Awesome 与 importmap，入口挂载 `index.tsx`。
 - `vite.config.ts`：端口/host，React 插件。
 

@@ -11,14 +11,13 @@ const App: React.FC = () => (
     <Router>
         <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/Home" element={<Home />} />
             <Route path="/service-hub" element={<ServiceHub />} />
             <Route path="/conversation-hub" element={<ConversationHub onExit={() => window.location.href = '/'} />} />
             <Route path="/claim-center" element={<ClaimCenter />} />
             <Route path="/claim-process" element={<ClaimProcessCenter />} />
-            <Route path="/staff" element={<StaffDashboard />} />
+            <Route path="/staff-dashboard" element={<StaffDashboard />} />
         </Routes>
     </Router>
 );
 
-export default App;  
+export default App;

@@ -1,23 +1,46 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import ServiceHub from './components/ServiceHub';
-import ConversationHub from './components/ConversationHub';
-import StaffDashboard from './pages/StaffDashboard';
-import ClaimCenter from './pages/ClaimCenter';
-import ClaimProcessCenter from './pages/ClaimProcessCenter';
+import React, { useState } from 'react';
 
-const App: React.FC = () => (
-    <Router>
-        <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/service-hub" element={<ServiceHub />} />
-            <Route path="/conversation-hub" element={<ConversationHub onExit={() => window.location.href = '/'} />} />
-            <Route path="/claim-center" element={<ClaimCenter />} />
-            <Route path="/claim-process" element={<ClaimProcessCenter />} />
-            <Route path="/staff-dashboard" element={<StaffDashboard />} />
-        </Routes>
-    </Router>
-);
+type View = "home" | "chat";
 
-export default App;
+const ChatWidget: React.FC = () => {
+    const [view, setView] = useState<View>("home");
+    const [messages, setMessages] = useState<string[]>([]);
+
+    const handleSendMessage = (message: string) => {
+        setMessages([...messages, message]);
+        setView("chat");
+    };
+
+    return (
+        <div>
+            {view === "home" && (
+                <div>
+                    <h1>欢迎使用聊天机器人</h1>
+                    <p>如何查询保单的缴费状态？</p>
+                    <button onClick={() => setView("chat")}>开始聊天</button>
+                </div>
+            )}
+            {view === "chat" && (
+                <div>
+                    <h1>聊天窗口</h1>
+                    <ul>
+                        {messages.map((msg, idx) => (
+                            <li key={idx}>{msg}</li>
+                        ))}
+                    </ul>
+                    <input
+                        type="text"
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && e.currentTarget.value.trim() !== "") {
+                                handleSendMessage(e.currentTarget.value.trim());
+                                e.currentTarget.value = "";
+                            }
+                        }}
+                    />
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default ChatWidget;

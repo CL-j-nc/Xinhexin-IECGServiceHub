@@ -1,9 +1,5 @@
 // conversation.types.ts
-export enum ConversationStatus {
-    AI_ONLY = 'AI_ONLY',               // 仅 AI 处理，无人工介入
-    HUMAN_INTERVENED = 'HUMAN_INTERVENED', // 人工介入并接管部分或全部回复
-    CLOSED = 'CLOSED'                  // 会话已结束，仅可查看，不可再写入
-}
+export type ConversationStatus = 'AI' | 'HUMAN' | 'CLOSED';
 
 export enum MessageRole {
     CLIENT = 'CLIENT',
@@ -59,7 +55,7 @@ export interface Conversation {
 
 export interface MonitoringMetrics {
     responseTimeAvg: number;
-    interventionRate: number;
+    interventionRate: string;
     riskFlags: number;
 }
 

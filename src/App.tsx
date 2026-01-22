@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
+import ServiceHub from './pages/ServiceHub';
 import ClaimCenter from './pages/ClaimCenter';
 import ConversationHub from './components/ConversationHub';
 import ClaimProcessCenter from './pages/ClaimProcessCenter'; // 截图名称一致  
@@ -11,10 +12,11 @@ const App = () => (
     <Router>
         <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/service-hub" element={<ServiceHub />} />
             <Route path="/claim-center" element={<ClaimCenter />} />
             <Route path="/conversation-hub" element={<ConversationHub onExit={function (): void {
                 throw new Error('Function not implemented.');
-            } } />} />
+            }} />} />
             <Route path="/claim-process-hub" element={<ClaimProcessCenter />} />
             <Route path="/staff-login" element={<StaffLogin onLogin={() => { }} onBack={() => { }} />} />
             <Route

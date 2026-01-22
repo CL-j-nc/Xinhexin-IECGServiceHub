@@ -16,35 +16,11 @@ const SystemIdentitySection = () => (
         </div>
         <div className="flex items-center gap-6 bg-white px-5 py-3 rounded-lg border border-slate-100 shadow-sm">
             <div className="text-right">
-                <svg
-                    viewBox="0 0 520 120"
-                    className="h-8 w-auto"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <circle cx="60" cy="60" r="38" fill="#0E8F5B" />
-                    <circle cx="60" cy="60" r="22" fill="#E6F4EF" />
-                    <text
-                        x="120"
-                        y="55"
-                        fontSize="36"
-                        fontWeight="700"
-                        fill="#111827"
-                        fontFamily="PingFang SC, Microsoft YaHei, sans-serif"
-                    >
-                        中国人寿
-                    </text>
-                    <line x1="300" y1="25" x2="300" y2="75" stroke="#10B981" strokeWidth="4" />
-                    <text
-                        x="320"
-                        y="55"
-                        fontSize="30"
-                        fontWeight="500"
-                        fill="#059669"
-                        fontFamily="PingFang SC, Microsoft YaHei, sans-serif"
-                    >
-                        财产保险
-                    </text>
-                </svg>
+                <img
+                    src="/logo/longlogo.jpeg"
+                    alt="中国人寿财产保险"
+                    className="h-14 md:h-16 lg:h-18 w-auto object-contain"
+                />
             </div>
         </div>
     </header>
@@ -53,10 +29,10 @@ const SystemIdentitySection = () => (
 const CoreServiceEntrySection = () => {
     const navigate = useNavigate();
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
                 { title: '保单服务中心', route: '/service-hub' },
-                { title: '团体客户服务管家', route: '/conversation-hub' },
+                { title: '团体客户服务管家', route: '/customer-service' },
                 { title: '报案中心', route: '/claim-center' },
                 { title: '理赔中心', route: '/claim-process-hub' }
             ].map((item) => (
@@ -95,28 +71,34 @@ const AuthorityNoticeSection = () => (
     </div>
 );
 
-const Home = () => (
-    <div className="min-h-screen bg-[#FDFDFD] font-sans text-slate-700">
-        <div className="max-w-5xl mx-auto px-6 lg:px-10 py-16">
-            <SystemIdentitySection />
-            <CoreServiceEntrySection />
-            <AuthorityNoticeSection />
-        </div>
-        <div className="py-6 text-center text-slate-400 text-xs border-t border-slate-100">
-            <p className="mb-2">
-                © 2025 China Life Property & Casualty Insurance Company Limited. All Rights Reserved.
-            </p>
-            <div className="flex justify-center gap-4">
-                <span>隐私政策</span>
-                <span>服务条款</span>
-                <span className="text-slate-300">|</span>
-                <button className="hover:text-emerald-600 transition-colors font-semibold flex items-center gap-1">
-                    <i className="fa-solid fa-lock text-[10px]"></i>
-                    员工内部通道
-                </button>
+const Home = () => {
+    const navigate = useNavigate();
+    return (
+        <div className="min-h-screen bg-[#FDFDFD] font-sans text-slate-700">
+            <div className="max-w-5xl mx-auto px-6 lg:px-10 py-16">
+                <SystemIdentitySection />
+                <CoreServiceEntrySection />
+                <AuthorityNoticeSection />
+            </div>
+            <div className="py-6 text-center text-slate-400 text-xs border-t border-slate-100">
+                <p className="mb-2">
+                    © 2025 China Life Property & Casualty Insurance Company Limited. All Rights Reserved.
+                </p>
+                <div className="flex justify-center gap-4">
+                    <span>隐私政策</span>
+                    <span>服务条款</span>
+                    <span className="text-slate-300">|</span>
+                    <button
+                        onClick={() => navigate('/staff-dashboard')}
+                        className="hover:text-emerald-600 transition-colors font-semibold flex items-center gap-1"
+                    >
+                        <i className="fa-solid fa-lock text-[10px]"></i>
+                        员工内部通道
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 export default Home;

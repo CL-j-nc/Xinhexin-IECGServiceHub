@@ -5,6 +5,8 @@ import { sendMessageToGemini } from '../services/geminiService';
 import { broadcastMessage, onBroadcastMessage } from '../services/eventBus';
 import { addMessage, createConversation } from '../services/conversationService'; // 新增导入，支持会话生成
 import { ConversationMessage, MessageRole } from '../services/conversation.types';
+import { fetchPolicyLifecycle, isPolicyFormatValid } from '../services/policyEngine';
+import { PolicyLifecycleData } from '../services/policyEngine.types';
 
 // Performance Optimization: Lazy load the heavy Voice Interface
 const VoiceCallInterface = React.lazy(() => import('./VoiceCallInterface'));
@@ -25,8 +27,17 @@ const QUICK_ACTIONS = [
 
 const TABS = ['平台功能', '车险理赔', '承保问题', '企业投保附加险'];
 
-const ChatWidget: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+interface ChatWidgetProps {
+  mode?: 'widget' | 'embedded';
+  initialOpen?: boolean;
+  containerClassName?: string;
+}
+
+const POLICY_NO_PATTERN = /\b(65|66)\d{3,}\b/;
+
+const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = false, containerClassName }) => {
+  const isEmbedded = mode === 'embedded';
+  const [isOpen, setIsOpen] = useState(isEmbedded || initialOpen);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [viewState, setViewState] = useState<'Home' | 'chat'>('Home');
   const [activeTab, setActiveTab] = useState('平台功能');
@@ -72,6 +83,64 @@ const ChatWidget: React.FC = () => {
     }
   }, [messages, isOpen, isVoiceMode, viewState]);
 
+  const formatPolicySummary = (data: PolicyLifecycleData) => {
+    if (!data.policy) {
+      const fallbackLines = [
+        `状态：${data.statusText}`,
+        data.statusDescription
+      ];
+      if (data.notice) fallbackLines.push(`提示：${data.notice}`);
+      return fallbackLines.join('\n');
+    }
+
+    const { policy } = data;
+    const lines = [
+      `保单号：${policy.policyNo}`,
+      `状态：${data.statusText}`,
+      `投保单位：${policy.holderName}`,
+      `产品名称：${policy.productName}`,
+      `保险期间：${policy.startDate} 至 ${policy.endDate}`,
+      `保费：${policy.premium}`,
+      `保额：${policy.sumInsured}`
+    ];
+
+    if (data.notice) {
+      lines.push(`提示：${data.notice}`);
+    }
+
+    return lines.join('\n');
+  };
+
+  const pushAiMessage = (conversationId: string, content: string, isError = false) => {
+    const aiMsg: ConversationMessage = {
+      id: Date.now().toString(),
+      conversationId,
+      role: MessageRole.AI,
+      content,
+      timestamp: new Date(),
+      isError
+    };
+    setMessages(prev => [...prev, aiMsg]);
+    addMessage(conversationId, aiMsg);
+    broadcastMessage(aiMsg);
+    setIsLoading(false);
+  };
+
+  const handlePolicyLookup = async (policyNo: string, conversationId: string) => {
+    if (!isPolicyFormatValid(policyNo)) {
+      pushAiMessage(conversationId, '保单号格式错误，请提供 65/66 开头的团体保单号。', true);
+      return;
+    }
+
+    try {
+      const data = await fetchPolicyLifecycle(policyNo);
+      const summary = formatPolicySummary(data);
+      pushAiMessage(conversationId, summary);
+    } catch (err) {
+      pushAiMessage(conversationId, '未查询到保单或接口不可用，请稍后再试。', true);
+    }
+  };
+
   // Handle sending a message (text input or FAQ click)
   const handleSendMessage = async (textOverride?: string) => {
     const textToSend = textOverride || input.trim();
@@ -107,6 +176,17 @@ const ChatWidget: React.FC = () => {
     broadcastMessage(newUserMsg);
 
     // --- LOGIC FLOW ---
+
+    const policyMatch = textToSend.match(POLICY_NO_PATTERN)?.[0];
+    if (policyMatch) {
+      await handlePolicyLookup(policyMatch, resolvedConversationId);
+      return;
+    }
+
+    if (/保单/.test(textToSend) && /(查询|查|核验)/.test(textToSend)) {
+      pushAiMessage(resolvedConversationId, '请提供 65/66 开头的团体保单号，我将为您核验保单状态。');
+      return;
+    }
 
     // 2. Risk Control Check (Local)
     if (containsRiskContent(textToSend)) {
@@ -148,7 +228,11 @@ const ChatWidget: React.FC = () => {
 
     // 4. AI Processing (Gemini)
     try {
-      const aiResponseText = await sendMessageToGemini(textToSend);
+      const aiResponseText = await sendMessageToGemini(
+        `你是团体客户服务管家，扮演专业人工客服，回答需简洁、专业且聚焦保单、理赔与服务指引。` +
+        `若信息不足，请先询问保单号或关键材料。` +
+        `不要编造政策或结果。\n客户问题：${textToSend}`
+      );
 
       const aiMsg: ConversationMessage = {
         id: (Date.now() + 1).toString(),
@@ -196,12 +280,24 @@ const ChatWidget: React.FC = () => {
     handleSendMessage(question);
   };
 
+  const wrapperClassName = [
+    'flex flex-col',
+    isEmbedded ? 'w-full items-stretch' : 'fixed bottom-6 right-6 z-50 items-end',
+    containerClassName
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const panelClassName = isEmbedded
+    ? 'w-full h-[70vh] min-h-[560px] max-h-[780px]'
+    : 'w-[375px] h-[600px]';
+
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className={wrapperClassName}>
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="w-[375px] h-[600px] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-gray-100">
+        <div className={`${panelClassName} bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-gray-100`}>
 
           {/* Header */}
           <div className="p-4 bg-white border-b border-gray-100 flex items-center justify-between shrink-0">
@@ -221,9 +317,11 @@ const ChatWidget: React.FC = () => {
               <button onClick={() => setIsVoiceMode(!isVoiceMode)} className="w-8 h-8 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
                 <i className={`fa-solid ${isVoiceMode ? 'fa-microphone-slash' : 'fa-microphone'} text-xl`}></i>
               </button>
-              <button onClick={() => setIsOpen(false)} className="w-8 h-8 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
-                <i className="fa-solid fa-xmark text-xl"></i>
-              </button>
+              {!isEmbedded && (
+                <button onClick={() => setIsOpen(false)} className="w-8 h-8 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                  <i className="fa-solid fa-xmark text-xl"></i>
+                </button>
+              )}
             </div>
           </div>
 
@@ -245,7 +343,11 @@ const ChatWidget: React.FC = () => {
                   {/* Quick Actions */}
                   <div className="grid grid-cols-2 gap-3">
                     {QUICK_ACTIONS.map((action, i) => (
-                      <button key={i} className="p-3 bg-white border border-gray-100 rounded-lg hover:shadow-sm transition-shadow flex flex-col items-center justify-center gap-2 group">
+                      <button
+                        key={i}
+                        onClick={() => handleSendMessage(action.label)}
+                        className="p-3 bg-white border border-gray-100 rounded-lg hover:shadow-sm transition-shadow flex flex-col items-center justify-center gap-2 group"
+                      >
                         <i className={`fa-solid ${action.icon} text-xl ${action.color} group-hover:scale-110 transition-transform`}></i>
                         <span className="text-xs text-gray-600 font-medium">{action.label}</span>
                       </button>
@@ -363,7 +465,7 @@ const ChatWidget: React.FC = () => {
       )}
 
       {/* Launcher Button */}
-      {!isOpen && (
+      {!isEmbedded && !isOpen && (
         <button
           onClick={() => setIsOpen(true)}
           className="w-16 h-16 bg-gradient-to-tr from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 group border-2 border-white/20"

@@ -1,33 +1,35 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import ServiceHub from './pages/ServiceHub';
 import PolicyQuery from './pages/service/PolicyQuery';
+import PolicyChange from './pages/service/PolicyChange';
+import EndorsementManagement from './pages/service/EndorsementManagement';
+import CustomerServiceHub from './pages/CustomerServiceHub';
 import ClaimCenter from './pages/ClaimCenter';
-import ConversationHub from './components/ConversationHub';
-import ClaimProcessCenter from './pages/ClaimProcessCenter'; // 截图名称一致  
+import ClaimProcessCenter from './pages/ClaimProcessCenter';
 import StaffLogin from './components/StaffLogin';
-import StaffDashboard from './pages/StaffDashboard'; // 假设  
+import StaffDashboard from './pages/StaffDashboard';
 
 const App = () => (
-    <Router>
-        <Routes>
-<Route path="/service-hub/query" element={<PolicyQuery />} />
-            <Route path="/" element={<Home />} />
-            <Route path="/service-hub" element={<ServiceHub />} />
-import PolicyQuery from './pages/service/PolicyQuery';
-            <Route path="/claim-center" element={<ClaimCenter />} />
-            <Route path="/conversation-hub" element={<ConversationHub onExit={function (): void {
-                throw new Error('Function not implemented.');
-            }} />} />
-            <Route path="/claim-process-hub" element={<ClaimProcessCenter />} />
-            <Route path="/staff-login" element={<StaffLogin onLogin={() => { }} onBack={() => { }} />} />
-            <Route
-                path="/staff-dashboard"
-                element={<StaffDashboard onExit={() => window.location.href = '/'} />}
-            />
-        </Routes>
-    </Router>
+  <Router>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/service-hub" element={<ServiceHub />} />
+      <Route path="/service-hub/query" element={<PolicyQuery />} />
+      <Route path="/service-hub/change" element={<PolicyChange />} />
+      <Route path="/service-hub/endorsement" element={<EndorsementManagement />} />
+      <Route path="/customer-service" element={<CustomerServiceHub />} />
+      <Route path="/claim-center" element={<ClaimCenter />} />
+      <Route path="/claim-process-hub" element={<ClaimProcessCenter />} />
+      <Route path="/staff-login" element={<StaffLogin onLogin={() => {}} onBack={() => {}} />} />
+      <Route
+        path="/staff-dashboard"
+        element={<StaffDashboard onExit={() => window.location.href = '/'} />}
+      />
+      <Route path="/conversation-hub" element={<Navigate to="/staff-dashboard" replace />} />
+    </Routes>
+  </Router>
 );
 
-export default App;  
+export default App;

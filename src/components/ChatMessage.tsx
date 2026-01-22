@@ -22,7 +22,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         </div>
 
         {/* Bubble */}
-        <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm
+        <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap
           ${isUser 
             ? 'bg-blue-600 text-white rounded-br-none' 
             : isSupervisor

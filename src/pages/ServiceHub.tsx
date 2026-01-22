@@ -1,38 +1,58 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const ServiceHub: React.FC = () => {
+  const navigate = useNavigate();
+  const serviceItems = [
+    {
+      title: '保单查询',
+      description: '查询 55 / 56 开头的团体保单信息',
+      route: '/service-hub/query',
+      status: '已接入'
+    },
+    {
+      title: '保单变更',
+      description: '保单信息变更、批改申请与状态跟踪',
+      route: '/service-hub/change',
+      status: '接口未接通'
+    },
+    {
+      title: '批单管理',
+      description: '批单流程进度、历史记录与结果回传',
+      route: '/service-hub/endorsement',
+      status: '接口未接通'
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-[#FDFDFD] px-6 py-16">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-black text-slate-900 mb-6">
+        <h1 className="text-3xl font-black text-slate-900 mb-10">
           保单服务中心
         </h1>
 
-        <p className="text-slate-500 mb-12">
-          本模块用于大宗团体客户保单相关业务处理，请从下方入口选择操作。
-        </p>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white border border-slate-200 rounded-xl p-6 hover:shadow-lg transition">
-            <h3 className="font-bold text-slate-800 mb-2">保单查询</h3>
-            <p className="text-sm text-slate-500">
-              查询已有团体保单的基本信息与状态。
-            </p>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-6 hover:shadow-lg transition">
-            <h3 className="font-bold text-slate-800 mb-2">保单变更</h3>
-            <p className="text-sm text-slate-500">
-              对在保期间的团体保单进行信息调整。
-            </p>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-6 hover:shadow-lg transition">
-            <h3 className="font-bold text-slate-800 mb-2">批单管理</h3>
-            <p className="text-sm text-slate-500">
-              生成、查看和管理保单批单记录。
-            </p>
-          </div>
+          {serviceItems.map((item) => {
+            const statusStyles =
+              item.status === '已接入'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
+                : 'border-amber-200 bg-amber-50 text-amber-600';
+            return (
+              <button
+                key={item.title}
+                onClick={() => navigate(item.route)}
+                className="bg-white border border-slate-200 rounded-xl p-6 text-left hover:shadow-lg hover:border-emerald-400 transition"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <h3 className="font-black text-lg text-slate-800 mb-2">{item.title}</h3>
+                  <span className={`text-[10px] uppercase tracking-widest px-2 py-1 border rounded-full ${statusStyles}`}>
+                    {item.status}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-500">{item.description}</p>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

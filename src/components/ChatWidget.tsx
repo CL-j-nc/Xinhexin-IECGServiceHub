@@ -28,7 +28,7 @@ const TABS = ['平台功能', '车险理赔', '承保问题', '企业投保附�
 const ChatWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
-  const [viewState, setViewState] = useState<'home' | 'chat'>('home');
+  const [viewState, setViewState] = useState<'Home' | 'chat'>('Home');
   const [activeTab, setActiveTab] = useState('平台功能');
 
   const [input, setInput] = useState('');
@@ -234,7 +234,7 @@ const ChatWidget: React.FC = () => {
             </Suspense>
           ) : (
             <>
-              {viewState === 'home' && (
+              {viewState === 'Home' && (
                 <div className="p-4 pb-20 flex-1 overflow-y-auto space-y-6">
                   {/* Greeting */}
                   <div className="text-center py-4">

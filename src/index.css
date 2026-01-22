@@ -1,1 +1,15 @@
-html,body,#root{height:100%;margin:0;padding:0;}
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#root {
+    width: 100%;
+    min-height: 100vh;
+    display: block;
+    background: #c4f0d91a;
+    color: #5dddb6d5;
+}

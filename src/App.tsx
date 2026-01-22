@@ -1,46 +1,23 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+import ClaimCenter from './pages/ClaimCenter';
+import ConversationHub from './components/ConversationHub';
+import ClaimProcessCenter from './pages/ClaimProcessCenter'; // 截图名称一致  
+import StaffLogin from './components/StaffLogin';
+import StaffDashboard from './pages/StaffDashboard'; // 假设  
 
-type View = "home" | "chat";
+const App = () => (
+    <Router>
+        <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/claim-center" element={<ClaimCenter />} />
+            <Route path="/conversation-hub" element={<ConversationHub />} />
+            <Route path="/claim-process-hub" element={<ClaimProcessCenter />} />
+            <Route path="/staff-login" element={<StaffLogin onLogin={() => { }} onBack={() => { }} />} />
+            <Route path="/staff-dashboard" element={<StaffDashboard onExit={() => { }} />} />
+        </Routes>
+    </Router>
+);
 
-const ChatWidget: React.FC = () => {
-    const [view, setView] = useState<View>("home");
-    const [messages, setMessages] = useState<string[]>([]);
-
-    const handleSendMessage = (message: string) => {
-        setMessages([...messages, message]);
-        setView("chat");
-    };
-
-    return (
-        <div>
-            {view === "home" && (
-                <div>
-                    <h1>欢迎使用聊天机器人</h1>
-                    <p>如何查询保单的缴费状态？</p>
-                    <button onClick={() => setView("chat")}>开始聊天</button>
-                </div>
-            )}
-            {view === "chat" && (
-                <div>
-                    <h1>聊天窗口</h1>
-                    <ul>
-                        {messages.map((msg, idx) => (
-                            <li key={idx}>{msg}</li>
-                        ))}
-                    </ul>
-                    <input
-                        type="text"
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter" && e.currentTarget.value.trim() !== "") {
-                                handleSendMessage(e.currentTarget.value.trim());
-                                e.currentTarget.value = "";
-                            }
-                        }}
-                    />
-                </div>
-            )}
-        </div>
-    );
-};
-
-export default ChatWidget;
+export default App;  

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import StaffLogin from '../components/StaffLogin';
 import ConversationHub from '../components/ConversationHub';
 
-const StaffDashboard: React.FC = () => {
+const StaffDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
 

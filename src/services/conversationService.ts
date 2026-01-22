@@ -3,7 +3,7 @@ import {
   ConversationMessage,
   BusinessDocument,
   ConversationHubData
-} from './conversation.types';
+} from './conversation.types.ts';
 
 const conversationStore: {
   conversations: Conversation[];
@@ -16,11 +16,14 @@ const conversationStore: {
 export function createConversation(customerId: string): Conversation {
   const conv: Conversation = {
     conversationId: 'conv_' + Date.now(),
-    customerId: customerId,
+    clientId: customerId,
     status: 'AI',
     interventions: 0,
     messages: [],
-    createdAt: new Date()
+    startTime: new Date(),
+    aiDrafts: [],
+    documents: [],
+    aiResponses: []
   };
   conversationStore.conversations.unshift(conv);
   return conv;
@@ -69,10 +72,10 @@ export function getHubData(): ConversationHubData {
     activeConversations: conversations,
     monitoring: {
       responseTimeAvg: total === 0 ? 0 : 900,
-      interventionRate:
-        total === 0
-          ? '0%'
-          : Math.round((interventionTotal / total) * 100) + '%'
+      interventionRate: total === 0
+        ? '0%'
+        : Math.round((interventionTotal / total) * 100) + '%',
+      riskFlags: 0
     }
   };
 }

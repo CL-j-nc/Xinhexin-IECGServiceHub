@@ -12,10 +12,15 @@ const App = () => (
         <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/claim-center" element={<ClaimCenter />} />
-            <Route path="/conversation-hub" element={<ConversationHub />} />
+            <Route path="/conversation-hub" element={<ConversationHub onExit={function (): void {
+                throw new Error('Function not implemented.');
+            } } />} />
             <Route path="/claim-process-hub" element={<ClaimProcessCenter />} />
             <Route path="/staff-login" element={<StaffLogin onLogin={() => { }} onBack={() => { }} />} />
-            <Route path="/staff-dashboard" element={<StaffDashboard />} />
+            <Route
+                path="/staff-dashboard"
+                element={<StaffDashboard onExit={() => window.location.href = '/'} />}
+            />
         </Routes>
     </Router>
 );

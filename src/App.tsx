@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import ServiceHub from './pages/ServiceHub';
+import PolicyQuery from './pages/service/PolicyQuery';
 import ClaimCenter from './pages/ClaimCenter';
 import ConversationHub from './components/ConversationHub';
 import ClaimProcessCenter from './pages/ClaimProcessCenter'; // 截图名称一致  
@@ -11,8 +12,10 @@ import StaffDashboard from './pages/StaffDashboard'; // 假设
 const App = () => (
     <Router>
         <Routes>
+<Route path="/service-hub/query" element={<PolicyQuery />} />
             <Route path="/" element={<Home />} />
             <Route path="/service-hub" element={<ServiceHub />} />
+import PolicyQuery from './pages/service/PolicyQuery';
             <Route path="/claim-center" element={<ClaimCenter />} />
             <Route path="/conversation-hub" element={<ConversationHub onExit={function (): void {
                 throw new Error('Function not implemented.');

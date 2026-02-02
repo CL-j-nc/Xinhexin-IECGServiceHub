@@ -6,7 +6,7 @@ interface StaffLoginProps {
 }
 
 const StaffLogin: React.FC<StaffLoginProps> = ({ onLogin, onBack }) => {
-  const [id, setId] = useState('9527'); // Default for demo convenience
+  const [id, setId] = useState('');
   const [pwd, setPwd] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -77,11 +77,6 @@ const StaffLogin: React.FC<StaffLoginProps> = ({ onLogin, onBack }) => {
                   placeholder="请输入密码"
                 />
               </div>
-            </div>
-
-            {/* Hint for Demo Users */}
-            <div className="text-[10px] text-slate-500 bg-slate-900/50 p-2 rounded text-center">
-              Demo 凭证: 工号 <span className="text-emerald-400 font-mono">9527</span> / 密码 <span className="text-emerald-400 font-mono">admin</span>
             </div>
 
             {error && (

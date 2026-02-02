@@ -10,6 +10,8 @@ import ClaimCenter from './pages/ClaimCenter';
 import ClaimProcessCenter from './pages/ClaimProcessCenter';
 import StaffLogin from './components/StaffLogin';
 import StaffDashboard from './pages/StaffDashboard';
+import CRMVehicleSearch from './pages/CRMVehicleSearch';
+import CRMVehicleDetail from './pages/CRMVehicleDetail';
 
 const App = () => (
   <Router>
@@ -22,7 +24,9 @@ const App = () => (
       <Route path="/customer-service" element={<CustomerServiceHub />} />
       <Route path="/claim-center" element={<ClaimCenter />} />
       <Route path="/claim-process-hub" element={<ClaimProcessCenter />} />
-      <Route path="/staff-login" element={<StaffLogin onLogin={() => {}} onBack={() => {}} />} />
+      <Route path="/crm/search" element={<CRMVehicleSearch />} />
+      <Route path="/crm/vehicle/:plateOrVin" element={<CRMVehicleDetail />} />
+      <Route path="/staff-login" element={<StaffLogin onLogin={() => { }} onBack={() => { }} />} />
       <Route
         path="/staff-dashboard"
         element={<StaffDashboard onExit={() => window.location.href = '/'} />}

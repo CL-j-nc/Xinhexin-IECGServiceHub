@@ -1,5 +1,5 @@
 import React from 'react';
-import { ClaimProcessMaterial } from '../../services/claim-process/claimProcess.types';
+import { Material as ClaimProcessMaterial } from '../../services/claim-process/claimProcess.types';
 
 interface Props {
     materials: ClaimProcessMaterial[];

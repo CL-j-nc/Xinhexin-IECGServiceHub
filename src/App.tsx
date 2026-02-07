@@ -12,11 +12,17 @@ import StaffLogin from './components/StaffLogin';
 import StaffDashboard from './pages/StaffDashboard';
 import CRMVehicleSearch from './pages/CRMVehicleSearch';
 import CRMVehicleDetail from './pages/CRMVehicleDetail';
+import GroupUnderwritingCenter from './pages/GroupUnderwritingCenter';
+import CRMDashboard from './pages/CRMDashboard';
+
+import AuthorityDocumentCenter from './pages/AuthorityDocumentCenter';
 
 const App = () => (
   <Router>
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/group-underwriting-center" element={<GroupUnderwritingCenter />} />
+      <Route path="/crm-dashboard" element={<CRMDashboard />} />
       <Route path="/service-hub" element={<ServiceHub />} />
       <Route path="/service-hub/query" element={<PolicyQuery />} />
       <Route path="/service-hub/change" element={<PolicyChange />} />
@@ -24,6 +30,7 @@ const App = () => (
       <Route path="/customer-service" element={<CustomerServiceHub />} />
       <Route path="/claim-center" element={<ClaimCenter />} />
       <Route path="/claim-process-hub" element={<ClaimProcessCenter />} />
+      <Route path="/authority-center" element={<AuthorityDocumentCenter />} />
       <Route path="/crm/search" element={<CRMVehicleSearch />} />
       <Route path="/crm/vehicle/:plateOrVin" element={<CRMVehicleDetail />} />
       <Route path="/staff-login" element={<StaffLogin onLogin={() => { }} onBack={() => { }} />} />

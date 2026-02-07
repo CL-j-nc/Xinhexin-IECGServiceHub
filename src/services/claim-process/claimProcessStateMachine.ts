@@ -1,23 +1,21 @@
 import { ClaimProcessState } from './claimProcess.types';
 
 const PROCESS_FLOW: ClaimProcessState[] = [
-    ClaimProcessState.CLAIM_ACCEPTED,
-    ClaimProcessState.MATERIALS_REVIEWING,
+    ClaimProcessState.PENDING_REVIEW,
     ClaimProcessState.MATERIALS_REQUIRED,
     ClaimProcessState.UNDER_INVESTIGATION,
-    ClaimProcessState.ASSESSING,
+    ClaimProcessState.PENDING_APPROVAL,
     ClaimProcessState.APPROVED,
-    ClaimProcessState.PAYMENT_IN_PROGRESS,
-    ClaimProcessState.COMPLETED
+    ClaimProcessState.PAID
 ];
 
 export const canTransition = (currentState: ClaimProcessState, targetState: ClaimProcessState): boolean => {
-    if (currentState === ClaimProcessState.COMPLETED || currentState === ClaimProcessState.REJECTED) {
+    if (currentState === ClaimProcessState.PAID || currentState === ClaimProcessState.REJECTED) {
         return false;
     }
 
     if (targetState === ClaimProcessState.REJECTED) {
-        return currentState === ClaimProcessState.ASSESSING;
+        return currentState === ClaimProcessState.PENDING_APPROVAL || currentState === ClaimProcessState.UNDER_INVESTIGATION;
     }
 
     const currentIndex = PROCESS_FLOW.indexOf(currentState);

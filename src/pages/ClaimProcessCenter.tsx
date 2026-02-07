@@ -7,19 +7,19 @@ import ClaimProcessMaterials from '../components/claim-process/ClaimProcessMater
 import ClaimProcessAttachments from '../components/claim-process/ClaimProcessAttachments';
 import ClaimProcessFooterNote from '../components/claim-process/ClaimProcessFooterNote';
 import { ClaimState } from '../services/claim/claim.types';
-import { getClaim } from '../services/claim/claimService';
+import { getClaim } from '../services/claimService';
 import { ClaimProcess } from '../services/claim-process/claimProcess.types';
 import {
     ensureClaimProcessForClaim,
-    getClaimProcessByClaimId,
     uploadClaimProcessMaterial
 } from '../services/claim-process/claimProcessService';
 
-const eligibleClaimStates = new Set<ClaimState>([
+const eligibleClaimStates = new Set<string>([
     ClaimState.SUBMITTED,
-    ClaimState.IN_REVIEW,
+    ClaimState.UNDER_REVIEW,
     ClaimState.NEEDS_MORE_INFO,
     ClaimState.CLOSED,
+    ClaimState.ACCEPTED,
     ClaimState.REJECTED
 ]);
 
@@ -35,28 +35,39 @@ const ClaimProcessCenter: React.FC = () => {
             return;
         }
 
-        let currentProcess = getClaimProcessByClaimId(claimId);
-        if (!currentProcess) {
-            const claim = getClaim(claimId);
-            if (!claim) {
-                setError('未找到关联的报案信息。');
-                return;
-            }
-            if (!eligibleClaimStates.has(claim.state)) {
-                setError('该案件仍在案件审核周期中，尚未进入理赔流程，请耐心等待案件流程顺序提示后再尝试理赔查询。');
-                return;
-            }
-            currentProcess = ensureClaimProcessForClaim(claim);
-        }
+        const init = async () => {
+            try {
+                // Get Claim first to verify state
+                const claim = await getClaim(claimId);
+                if (!eligibleClaimStates.has(claim.state)) {
+                    // If DRAFT, not eligible
+                    setError('该案件仍在报案填写阶段或不满足理赔查询条件。');
+                    return;
+                }
 
-        setError(null);
-        setProcess({ ...currentProcess });
+                // Get Process
+                const currentProcess = await ensureClaimProcessForClaim(claimId);
+                if (!currentProcess) {
+                    setError('无法加载理赔流程信息。');
+                    return;
+                }
+                setProcess(currentProcess);
+                setError(null);
+            } catch (e) {
+                setError('系统错误，无法查询。');
+            }
+        };
+        init();
     }, [searchParams]);
 
-    const handleUpload = (materialId: string, fileName: string) => {
+    const handleUpload = async (materialId: string, fileName: string) => {
         if (!process) return;
-        const updated = uploadClaimProcessMaterial(process.claimId, materialId, fileName);
-        setProcess({ ...updated });
+        try {
+            const updated = await uploadClaimProcessMaterial(process.claimId, materialId, fileName);
+            if (updated) setProcess(updated);
+        } catch (e) {
+            alert('上传失败');
+        }
     };
 
     if (error) {

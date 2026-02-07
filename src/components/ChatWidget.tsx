@@ -228,11 +228,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
 
     // 4. AI Processing (Gemini)
     try {
-      const aiResponseText = await sendMessageToGemini(
-        `你是团体客户服务管家，扮演专业人工客服，回答需简洁、专业且聚焦保单、理赔与服务指引。` +
-        `若信息不足，请先询问保单号或关键材料。` +
-        `不要编造政策或结果。\n客户问题：${textToSend}`
-      );
+      const aiResponseText = await sendMessageToGemini(textToSend);
 
       const aiMsg: ConversationMessage = {
         id: (Date.now() + 1).toString(),

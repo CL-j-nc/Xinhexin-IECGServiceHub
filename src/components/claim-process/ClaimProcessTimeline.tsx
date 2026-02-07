@@ -1,5 +1,5 @@
 import React from 'react';
-import { ClaimProcessTimelineEntry } from '../../services/claim-process/claimProcess.types';
+import { TimelineEntry as ClaimProcessTimelineEntry } from '../../services/claim-process/claimProcess.types';
 
 interface Props {
     timeline: ClaimProcessTimelineEntry[];

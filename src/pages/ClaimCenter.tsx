@@ -6,60 +6,92 @@ import ClaimForm from '../components/claim/ClaimForm';
 import ClaimUploadSection from '../components/claim/ClaimUploadSection';
 import ClaimSummary from '../components/claim/ClaimSummary';
 import ClaimHistory from '../components/claim/ClaimHistory';
-import { createDraftClaim, updateClaimField, addAttachment, submitClaim } from '../services/claim/claimService';
+import { createDraftClaim, updateClaimField, addAttachment, submitClaim, getClaim } from '../services/claimService';
 import { ClaimCase, ClaimState } from '../services/claim/claim.types';
 
 const ClaimCenter: React.FC = () => {
     const [searchParams] = useSearchParams();
     const [claim, setClaim] = useState<ClaimCase | null>(null);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const policyNo = searchParams.get('policyNo');
         const conversationId = searchParams.get('conversationId') || undefined;
+        const existingClaimId = searchParams.get('claimId'); // Support loading existing
 
-        if (policyNo && /^(65|66)\d+$/.test(policyNo)) {
-            // Initialize new draft
-            const newClaim = createDraftClaim(policyNo, conversationId);
-            setClaim(newClaim);
-        } else {
-            alert('无效的保单号或参数缺失');
-        }
+        const init = async () => {
+            if (existingClaimId) {
+                try {
+                    const data = await getClaim(existingClaimId);
+                    setClaim(data);
+                } catch (e) {
+                    alert('无法加载报案记录');
+                }
+                return;
+            }
+
+            if (policyNo && /^(65|66)\d+$/.test(policyNo)) {
+                try {
+                    // Initialize new draft
+                    const newClaim = await createDraftClaim(policyNo, conversationId);
+                    setClaim(newClaim);
+                } catch (e) {
+                    alert('无法创建报案草稿：' + (e as Error).message);
+                }
+            } else {
+                // Do nothing or alert only if explicit intent?
+                // alert('无效的保单号或参数缺失');
+            }
+        };
+        init();
     }, [searchParams]);
 
-    const handleFieldChange = (field: keyof ClaimCase, value: any) => {
+    const handleFieldChange = async (field: keyof ClaimCase, value: any) => {
         if (!claim) return;
-        const updated = updateClaimField(claim.claimId, field, value);
-        setClaim({ ...updated });
+        // Optimistic update or wait?
+        // Let's wait for safety with backend
+        try {
+            const updated = await updateClaimField(claim.claimId, field, value);
+            setClaim(updated);
+        } catch (e) {
+            console.error(e);
+        }
     };
 
-    const handleUpload = (fileName: string) => {
+    const handleUpload = async (fileName: string) => {
         if (!claim) return;
-        const updated = addAttachment(claim.claimId, fileName);
-        setClaim({ ...updated });
+        try {
+            const updated = await addAttachment(claim.claimId, fileName);
+            setClaim(updated);
+        } catch (e) {
+            alert('上传失败');
+        }
     };
 
     const handleSubmit = async () => {
         if (!claim) return;
-        const updated = submitClaim(claim.claimId);
-        setClaim({ ...updated });
-
-        // Polling for MVP auto-transition simulation
-        const interval = setInterval(() => {
-            // In a real app, we would re-fetch. Here we rely on the object reference or simple force update if needed.
-            // For MVP simplicity, we won't implement full polling here, relying on user action or mock service immediate return.
-            // But service does setTimeout, so let's just re-read after a delay manually for demo.
-        }, 2000);
+        setLoading(true);
+        try {
+            const updated = await submitClaim(claim.claimId);
+            setClaim(updated);
+        } catch (e) {
+            alert('提交失败：' + (e as Error).message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (!claim) return <div className="p-10 text-center text-slate-400">正在初始化报案中心...</div>;
 
     const showProcessEntry = [
         ClaimState.SUBMITTED,
-        ClaimState.IN_REVIEW,
+        ClaimState.UNDER_REVIEW, // Sync with type definition
+        ClaimState.UNDER_REVIEW,    // Legacy/Typo Safety
         ClaimState.NEEDS_MORE_INFO,
         ClaimState.CLOSED,
+        ClaimState.ACCEPTED,
         ClaimState.REJECTED
-    ].includes(claim.state);
+    ].includes(claim.state as any);
 
     return (
         <div className="min-h-screen bg-[#FDFDFD] font-sans text-slate-700">
@@ -73,16 +105,22 @@ const ClaimCenter: React.FC = () => {
                             <p className="text-sm text-slate-600 mt-2">报案已进入理赔流程，可查看阶段说明与材料进度。</p>
                         </div>
                         <Link
-                            to={`/claim-process?claimId=${claim.claimId}`}
+                            to={`/claim-process-hub?claimId=${claim.claimId}`}
                             className="text-sm font-medium text-emerald-700 hover:text-emerald-800 transition-colors"
                         >
                             点击查看理赔进度
                         </Link>
                     </div>
                 )}
-                <ClaimForm claim={claim} onChange={handleFieldChange} />
-                <ClaimUploadSection claim={claim} onUpload={handleUpload} />
-                <ClaimSummary claim={claim} onSubmit={handleSubmit} />
+                {/* Only allow editing form in DRAFT/NEEDS_MORE_INFO states */}
+                {(claim.state === ClaimState.DRAFT || claim.state === ClaimState.NEEDS_MORE_INFO || claim.state === ClaimState.READY_TO_SUBMIT) && (
+                    <>
+                        <ClaimForm claim={claim} onChange={handleFieldChange} />
+                        <ClaimUploadSection claim={claim} onUpload={handleUpload} />
+                    </>
+                )}
+
+                <ClaimSummary claim={claim} onSubmit={handleSubmit} loading={loading} />
                 <ClaimHistory claim={claim} />
             </div>
         </div>

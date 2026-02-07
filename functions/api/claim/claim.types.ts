@@ -28,14 +28,6 @@ export interface TimelineEntry {
     stage?: string;
 }
 
-export interface Attachment {
-    id: string;
-    fileName: string;
-    fileUrl?: string; // For frontend display if needed, though usually just ID/Name is stored
-    uploadTime: number;
-    type: string; // 'evidence' | 'material'
-}
-
 export interface ClaimCase {
     claimId: string;
     policyNo: string;

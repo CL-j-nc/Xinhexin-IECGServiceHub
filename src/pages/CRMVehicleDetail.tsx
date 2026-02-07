@@ -70,50 +70,23 @@ const CRMVehicleDetail: React.FC = () => {
         setLoading(true);
 
         try {
-            // 尝试从API加载 - 使用规范路径 /api/crm/by-vehicle
-            const response = await fetch(`/api/crm/by-vehicle?plate=${encodeURIComponent(plateOrVin)}`);
+            // 尝试从API加载
+            const response = await fetch(`/api/crm/vehicle/${encodeURIComponent(plateOrVin)}`);
             if (response.ok) {
-                const data = await response.json() as any;
-                if (data && data.vehicle_policy_uid) {
-                    // 转换字段名从snake_case到camelCase
-                    const profile: VehicleProfile = {
-                        vehiclePolicyUid: data.vehicle_policy_uid,
-                        plate: data.plate,
-                        vin: data.vin,
-                        currentStatus: data.current_status || "ACTIVE",
-                        contacts: (data.contacts || []).map((c: any) => ({
-                            contactId: c.contact_id,
-                            roleType: c.role_type,
-                            name: c.name,
-                            phone: c.phone
-                        })),
-                        flags: (data.flags || []).map((f: any) => ({
-                            flagId: f.flag_id,
-                            flagType: f.flag_type,
-                            flagNote: f.flag_note,
-                            isActive: f.is_active === 1,
-                            createdAt: f.created_at || "",
-                            createdBy: f.created_by || ""
-                        }))
-                    };
-                    setProfile(profile);
-                    setDataMode("database");
+                const data = await response.json() as VehicleProfile;
+                setProfile(data);
+                setDataMode("database");
 
-                    // 加载其他数据 - 使用规范路径
-                    const vehiclePolicyUid = data.vehicle_policy_uid;
-                    const [timelineRes, interactionsRes, flagsRes] = await Promise.all([
-                        fetch(`/api/crm/timeline?vehicle_policy_uid=${vehiclePolicyUid}`),
-                        fetch(`/api/crm/vehicle/${vehiclePolicyUid}/interactions`),
-                        fetch(`/api/crm/vehicle/${vehiclePolicyUid}/flags`),
-                    ]);
+                // 加载其他数据
+                const [timelineRes, interactionsRes, flagsRes] = await Promise.all([
+                    fetch(`/api/crm/vehicle/${data.vehiclePolicyUid}/timeline`),
+                    fetch(`/api/crm/vehicle/${data.vehiclePolicyUid}/interactions`),
+                    fetch(`/api/crm/vehicle/${data.vehiclePolicyUid}/flags`),
+                ]);
 
-                    if (timelineRes.ok) setTimeline(await timelineRes.json() as TimelineEvent[]);
-                    if (interactionsRes.ok) setInteractions(await interactionsRes.json() as Interaction[]);
-                    if (flagsRes.ok) setFlags((await flagsRes.json() as Flag[]).filter((f: Flag) => f.isActive));
-                } else {
-                    // 使用模拟数据
-                    loadMockData();
-                }
+                if (timelineRes.ok) setTimeline(await timelineRes.json() as TimelineEvent[]);
+                if (interactionsRes.ok) setInteractions(await interactionsRes.json() as Interaction[]);
+                if (flagsRes.ok) setFlags((await flagsRes.json() as Flag[]).filter((f: Flag) => f.isActive));
             } else {
                 // 使用模拟数据
                 loadMockData();
@@ -125,8 +98,6 @@ const CRMVehicleDetail: React.FC = () => {
             setLoading(false);
         }
     };
-
-
 
     const loadMockData = () => {
         setDataMode("mock");

@@ -14,7 +14,7 @@ const SystemIdentitySection = () => (
                 </p>
             </div>
         </div>
-        <div className="flex items-center gap-6 bg-white px-5 py-3 rounded-lg border border-slate-100 shadow-sm">
+        <div className="flex items-center gap-6">
             <div className="text-right">
                 <img
                     src="/logo/longlogo.jpeg"
@@ -31,6 +31,8 @@ const CoreServiceEntrySection = () => {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
+                { title: '团体客户承保中心', route: '/group-underwriting-center' },
+                { title: 'CRM 客户关系管理', route: '/crm-dashboard' },
                 { title: '保单服务中心', route: '/service-hub' },
                 { title: '团体客户服务管家', route: '/customer-service' },
                 { title: '报案中心', route: '/claim-center' },

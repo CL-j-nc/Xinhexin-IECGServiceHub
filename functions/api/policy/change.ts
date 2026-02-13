@@ -25,6 +25,34 @@ interface PolicyChangeRecord {
 // In-memory store for MVP (will be replaced with D1 later)
 const changeStore: Map<string, PolicyChangeRecord> = new Map();
 
+// Initialize with dummy data
+const dummyChangeId1 = 'CHG-1707292800000-1234';
+changeStore.set(dummyChangeId1, {
+    changeId: dummyChangeId1,
+    policyNo: '6510000001',
+    changeType: 'ADDRESS',
+    changeDetails: '变更地址为：上海市浦东新区陆家嘴环路1000号',
+    status: 'APPROVED',
+    applicantName: '张三',
+    applicantContact: '13800138000',
+    createdAt: '2024-02-07T10:00:00.000Z',
+    updatedAt: '2024-02-08T14:30:00.000Z',
+    reviewNote: '审核通过'
+});
+
+const dummyChangeId2 = 'CHG-1707379200000-5678';
+changeStore.set(dummyChangeId2, {
+    changeId: dummyChangeId2,
+    policyNo: '6510000001',
+    changeType: 'CONTACT',
+    changeDetails: '变更联系人为：李四，电话：13900139000',
+    status: 'PENDING',
+    applicantName: '李四',
+    applicantContact: '13900139000',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+});
+
 function generateChangeId(): string {
     return `CHG-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 }
@@ -48,6 +76,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const { request } = context;
     const url = new URL(request.url);
     const pathname = url.pathname;
+
+    console.log(`[PolicyChange] Request: ${request.method} ${pathname}`);
 
     // CORS preflight
     if (request.method === 'OPTIONS') {

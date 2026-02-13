@@ -26,6 +26,35 @@ interface EndorsementApplyRequest {
 // In-memory store for MVP
 const endorsementStore: Map<string, EndorsementRecord> = new Map();
 
+// Initialize with dummy data
+const dummyEndorseNo1 = 'ED202400123';
+endorsementStore.set(dummyEndorseNo1, {
+    endorseNo: dummyEndorseNo1,
+    policyNo: '6510000001',
+    endorseType: 'ADD_INSURED',
+    description: '新增被保险人：王五，身份证号：310101199001010001',
+    status: 'APPROVED',
+    effectiveDate: '2024-02-01T00:00:00.000Z',
+    premiumChange: 500.00,
+    applicantName: '张三',
+    createdAt: '2024-01-31T10:00:00.000Z',
+    updatedAt: '2024-02-01T09:00:00.000Z',
+    approvalNote: '核保通过'
+});
+
+const dummyEndorseNo2 = 'ED202400124';
+endorsementStore.set(dummyEndorseNo2, {
+    endorseNo: dummyEndorseNo2,
+    policyNo: '6510000001',
+    endorseType: 'CHANGE_COVERAGE',
+    description: '意外伤害保额调整为50万',
+    status: 'PENDING',
+    effectiveDate: '2024-02-10T00:00:00.000Z',
+    applicantName: '李四',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+});
+
 function generateEndorseNo(): string {
     const date = new Date();
     const prefix = 'ED';
@@ -53,6 +82,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const { request } = context;
     const url = new URL(request.url);
     const pathname = url.pathname;
+
+    console.log(`[Endorsement] Request: ${request.method} ${pathname}`);
 
     // CORS preflight
     if (request.method === 'OPTIONS') {

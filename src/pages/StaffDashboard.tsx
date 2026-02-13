@@ -75,6 +75,28 @@ const StaffDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => {
             </p>
           </button>
 
+          {/* 核保记录查询 - P0-1 新增 */}
+          <button
+            onClick={() => navigate('/underwriting-lookup')}
+            className="bg-gradient-to-br from-cyan-900/50 to-cyan-950 border border-cyan-800/50 rounded-xl p-6 text-left hover:border-cyan-600 hover:shadow-lg hover:shadow-cyan-900/20 transition-all group"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-cyan-800/50 rounded-lg flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-cyan-400">
+                  <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+                  <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M11 8v6M8 11h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-white group-hover:text-cyan-300 transition-colors">
+                核保记录查询
+              </h3>
+            </div>
+            <p className="text-sm text-slate-400">
+              按手机号查询核保状态、验证码与二维码
+            </p>
+          </button>
+
           {/* 续保提醒 */}
           <div className="bg-gradient-to-br from-amber-900/30 to-amber-950/50 border border-amber-800/30 rounded-xl p-6 text-left opacity-60 cursor-not-allowed">
             <div className="flex items-center gap-3 mb-4">

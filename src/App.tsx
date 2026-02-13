@@ -14,6 +14,7 @@ import CRMVehicleSearch from './pages/CRMVehicleSearch';
 import CRMVehicleDetail from './pages/CRMVehicleDetail';
 import GroupUnderwritingCenter from './pages/GroupUnderwritingCenter';
 import CRMDashboard from './pages/CRMDashboard';
+import UnderwritingLookup from './pages/UnderwritingLookup';
 
 import AuthorityDocumentCenter from './pages/AuthorityDocumentCenter';
 
@@ -33,6 +34,7 @@ const App = () => (
       <Route path="/authority-center" element={<AuthorityDocumentCenter />} />
       <Route path="/crm/search" element={<CRMVehicleSearch />} />
       <Route path="/crm/vehicle/:plateOrVin" element={<CRMVehicleDetail />} />
+      <Route path="/underwriting-lookup" element={<UnderwritingLookup />} />
       <Route path="/staff-login" element={<StaffLogin onLogin={() => { }} onBack={() => { }} />} />
       <Route
         path="/staff-dashboard"

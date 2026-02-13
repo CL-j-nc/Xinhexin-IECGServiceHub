@@ -121,20 +121,28 @@ const EndorsementManagement: React.FC = () => {
             />
           </label>
           <div className="flex gap-3">
-            <button
-              onClick={fetchRecords}
-              disabled={!policyNo || loading}
-              className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition disabled:opacity-50"
-            >
-              {loading ? '查询中...' : '查询批单'}
-            </button>
-            <button
-              onClick={() => setMode('form')}
-              disabled={!policyNo}
-              className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition disabled:opacity-50"
-            >
-              申请批单
-            </button>
+              <button
+                onClick={fetchRecords}
+                disabled={!policyNo || loading}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition disabled:opacity-50"
+              >
+                {loading ? '查询中...' : '查询批单'}
+              </button>
+              <button
+                onClick={fetchRecords}
+                disabled={!policyNo || loading}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition disabled:opacity-50"
+                title="刷新列表"
+              >
+                <i className={`fa-solid fa-rotate-right ${loading ? 'animate-spin' : ''}`}></i>
+              </button>
+              <button
+                onClick={() => setMode('form')}
+                disabled={!policyNo}
+                className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition disabled:opacity-50"
+              >
+                申请批单
+              </button>
           </div>
         </div>
 
@@ -221,12 +229,18 @@ const EndorsementManagement: React.FC = () => {
         {/* Records List */}
         {mode === 'list' && (
           <div className="space-y-3">
-            {records.length === 0 && !loading && policyNo && (
+            {loading && (
+              <div className="py-8 text-center text-slate-500 text-sm">
+                <i className="fa-solid fa-circle-notch fa-spin text-emerald-500 text-xl mb-2"></i>
+                <p>加载中...</p>
+              </div>
+            )}
+            {!loading && records.length === 0 && policyNo && (
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-6 text-center text-slate-500 text-sm">
                 暂无批单记录
               </div>
             )}
-            {records.map((record) => (
+            {!loading && records.map((record) => (
               <div key={record.endorseNo} className="bg-white border border-slate-100 rounded-xl p-5 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-400">{record.endorseNo}</span>

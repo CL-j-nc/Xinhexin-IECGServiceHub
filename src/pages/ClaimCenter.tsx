@@ -6,13 +6,15 @@ import ClaimForm from '../components/claim/ClaimForm';
 import ClaimUploadSection from '../components/claim/ClaimUploadSection';
 import ClaimSummary from '../components/claim/ClaimSummary';
 import ClaimHistory from '../components/claim/ClaimHistory';
+import ClaimStepBar from '../components/claim/ClaimStepBar';
 import { createDraftClaim, updateClaimField, addAttachment, submitClaim, getClaim } from '../services/claimService';
 import { ClaimCase, ClaimState } from '../services/claim/claim.types';
 
 const ClaimCenter: React.FC = () => {
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [claim, setClaim] = useState<ClaimCase | null>(null);
     const [loading, setLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
 
     useEffect(() => {
         const policyNo = searchParams.get('policyNo');
@@ -48,8 +50,6 @@ const ClaimCenter: React.FC = () => {
 
     const handleFieldChange = async (field: keyof ClaimCase, value: any) => {
         if (!claim) return;
-        // Optimistic update or wait?
-        // Let's wait for safety with backend
         try {
             const updated = await updateClaimField(claim.claimId, field, value);
             setClaim(updated);
@@ -81,47 +81,103 @@ const ClaimCenter: React.FC = () => {
         }
     };
 
-    if (!claim) return <div className="p-10 text-center text-slate-400">正在初始化报案中心...</div>;
+    const handleNewClaim = () => {
+        if (claim?.policyNo) {
+            // clear claimId, keep policyNo
+            const newParams = new URLSearchParams();
+            newParams.set('policyNo', claim.policyNo);
+            if (claim.conversationId) newParams.set('conversationId', claim.conversationId);
+            setSearchParams(newParams);
+            setClaim(null); // Clear current claim to trigger re-init
+        }
+    };
+
+    if (!claim) return <div className="min-h-screen flex items-center justify-center text-slate-400">正在初始化报案中心...</div>;
 
     const showProcessEntry = [
         ClaimState.SUBMITTED,
-        ClaimState.UNDER_REVIEW, // Sync with type definition
-        ClaimState.UNDER_REVIEW,    // Legacy/Typo Safety
+        ClaimState.UNDER_REVIEW,
         ClaimState.NEEDS_MORE_INFO,
         ClaimState.CLOSED,
         ClaimState.ACCEPTED,
         ClaimState.REJECTED
-    ].includes(claim.state as any);
+    ].includes(claim.state);
+
+    const isEditable = claim.state === ClaimState.DRAFT || claim.state === ClaimState.NEEDS_MORE_INFO || claim.state === ClaimState.READY_TO_SUBMIT;
 
     return (
-        <div className="min-h-screen bg-[#FDFDFD] font-sans text-slate-700">
-            <div className="max-w-3xl mx-auto px-6 lg:px-8 py-12 space-y-6">
-                <ClaimEntry policyNo={claim.policyNo} conversationId={claim.conversationId} />
-                <ClaimStatusBanner state={claim.state} />
-                {showProcessEntry && (
-                    <div className="bg-white border border-slate-100 rounded-lg p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div>
-                            <p className="text-[10px] text-slate-400 uppercase tracking-widest">理赔流程</p>
-                            <p className="text-sm text-slate-600 mt-2">报案已进入理赔流程，可查看阶段说明与材料进度。</p>
-                        </div>
-                        <Link
-                            to={`/claim-process-hub?claimId=${claim.claimId}`}
-                            className="text-sm font-medium text-emerald-700 hover:text-emerald-800 transition-colors"
-                        >
-                            点击查看理赔进度
-                        </Link>
-                    </div>
-                )}
-                {/* Only allow editing form in DRAFT/NEEDS_MORE_INFO states */}
-                {(claim.state === ClaimState.DRAFT || claim.state === ClaimState.NEEDS_MORE_INFO || claim.state === ClaimState.READY_TO_SUBMIT) && (
-                    <>
-                        <ClaimForm claim={claim} onChange={handleFieldChange} />
-                        <ClaimUploadSection claim={claim} onUpload={handleUpload} />
-                    </>
-                )}
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-700 py-8">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+                
+                {/* Header Card: Policy Info & Actions */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <ClaimEntry policyNo={claim.policyNo} conversationId={claim.conversationId} />
+                    <button 
+                        onClick={handleNewClaim}
+                        className="px-4 py-2 bg-white border border-emerald-200 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-50 hover:border-emerald-300 transition-colors shadow-sm flex items-center gap-2"
+                    >
+                        <i className="fa-solid fa-plus"></i>
+                        发起新报案
+                    </button>
+                </div>
 
-                <ClaimSummary claim={claim} onSubmit={handleSubmit} loading={loading} />
-                <ClaimHistory claim={claim} />
+                {/* Progress Section */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i className="fa-solid fa-chart-line text-emerald-500"></i>
+                            当前进度
+                        </h2>
+                        {showProcessEntry && (
+                             <Link
+                                to={`/claim-process-hub?claimId=${claim.claimId}`}
+                                className="text-sm font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1 transition-colors"
+                            >
+                                查看详细流程 <i className="fa-solid fa-chevron-right text-xs"></i>
+                            </Link>
+                        )}
+                    </div>
+
+                    <ClaimStepBar state={claim.state} />
+                    <ClaimStatusBanner state={claim.state} />
+                </div>
+
+                {/* Details & History Tabs */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="flex border-b border-slate-100">
+                        <button 
+                            onClick={() => setActiveTab('details')}
+                            className={`flex-1 py-4 text-sm font-medium text-center transition-colors relative ${activeTab === 'details' ? 'text-emerald-700 bg-emerald-50/30' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                        >
+                            报案详情
+                            {activeTab === 'details' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-500"></div>}
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('history')}
+                            className={`flex-1 py-4 text-sm font-medium text-center transition-colors relative ${activeTab === 'history' ? 'text-emerald-700 bg-emerald-50/30' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                        >
+                            历史记录
+                            {activeTab === 'history' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-500"></div>}
+                        </button>
+                    </div>
+
+                    <div className="p-6">
+                        {activeTab === 'details' ? (
+                            <div className="space-y-6">
+                                <ClaimForm claim={claim} onChange={handleFieldChange} />
+                                <ClaimUploadSection claim={claim} onUpload={handleUpload} />
+                                {isEditable && (
+                                    <ClaimSummary claim={claim} onSubmit={handleSubmit} loading={loading} />
+                                )}
+                            </div>
+                        ) : (
+                            <div className="animate-in fade-in duration-300">
+                                <ClaimHistory claim={claim} />
+                            </div>
+                        )}
+                    </div>
+                </div>
+
             </div>
         </div>
     );

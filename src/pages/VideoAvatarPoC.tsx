@@ -34,7 +34,7 @@ const VideoAvatarPoC: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isRunning, setIsRunning] = useState(false);
-    const [avatarStyle, setAvatarStyle] = useState<'cartoon' | 'minimal' | 'professional'>('cartoon');
+    const [avatarStyle, setAvatarStyle] = useState<'minimal' | 'professional'>('professional');
     const [showOriginal, setShowOriginal] = useState(true);
     const [landmarks, setLandmarks] = useState<FaceLandmarks | null>(null);
 
@@ -108,148 +108,6 @@ const VideoAvatarPoC: React.FC = () => {
             mouthWidth: Math.min(Math.max(mouthWidth, 0.3), 1),
             eyebrowRaise: Math.min(Math.max(eyebrowRaise, 0), 1)
         };
-    };
-
-    // 绘制卡通风格数字人
-    const drawCartoonAvatar = (ctx: CanvasRenderingContext2D, features: FaceLandmarks) => {
-        const width = ctx.canvas.width;
-        const height = ctx.canvas.height;
-        const centerX = width / 2;
-        const centerY = height / 2;
-
-        // 清空画布
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(0, 0, width, height);
-
-        // 应用头部旋转
-        ctx.save();
-        ctx.translate(centerX, centerY);
-        ctx.rotate(features.headRotation.z * Math.PI / 180);
-        ctx.translate(features.headRotation.y * 1.5, features.headRotation.x * 1.5);
-
-        // 脸部 (椭圆)
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 100, 130, 0, 0, Math.PI * 2);
-        ctx.fillStyle = '#fcd9b6';
-        ctx.fill();
-        ctx.strokeStyle = '#e8b88a';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // 头发
-        ctx.beginPath();
-        ctx.ellipse(0, -80, 110, 70, 0, Math.PI, Math.PI * 2);
-        ctx.fillStyle = '#2d1b0e';
-        ctx.fill();
-
-        // 左眼
-        const leftEyeX = -35;
-        const leftEyeY = -20;
-        ctx.beginPath();
-        ctx.ellipse(leftEyeX, leftEyeY, 20, 12 * features.leftEyeOpen + 2, 0, 0, Math.PI * 2);
-        ctx.fillStyle = 'white';
-        ctx.fill();
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        // 瞳孔
-        if (features.leftEyeOpen > 0.2) {
-            ctx.beginPath();
-            ctx.arc(leftEyeX + features.headRotation.y * 0.2, leftEyeY, 8, 0, Math.PI * 2);
-            ctx.fillStyle = '#1e3a5f';
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(leftEyeX + features.headRotation.y * 0.2 - 2, leftEyeY - 2, 3, 0, Math.PI * 2);
-            ctx.fillStyle = 'white';
-            ctx.fill();
-        }
-
-        // 右眼
-        const rightEyeX = 35;
-        const rightEyeY = -20;
-        ctx.beginPath();
-        ctx.ellipse(rightEyeX, rightEyeY, 20, 12 * features.rightEyeOpen + 2, 0, 0, Math.PI * 2);
-        ctx.fillStyle = 'white';
-        ctx.fill();
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        // 瞳孔
-        if (features.rightEyeOpen > 0.2) {
-            ctx.beginPath();
-            ctx.arc(rightEyeX + features.headRotation.y * 0.2, rightEyeY, 8, 0, Math.PI * 2);
-            ctx.fillStyle = '#1e3a5f';
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(rightEyeX + features.headRotation.y * 0.2 - 2, rightEyeY - 2, 3, 0, Math.PI * 2);
-            ctx.fillStyle = 'white';
-            ctx.fill();
-        }
-
-        // 眉毛
-        const eyebrowY = -45 - features.eyebrowRaise * 10;
-        ctx.beginPath();
-        ctx.moveTo(leftEyeX - 20, eyebrowY);
-        ctx.quadraticCurveTo(leftEyeX, eyebrowY - 5, leftEyeX + 20, eyebrowY);
-        ctx.strokeStyle = '#2d1b0e';
-        ctx.lineWidth = 4;
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(rightEyeX - 20, eyebrowY);
-        ctx.quadraticCurveTo(rightEyeX, eyebrowY - 5, rightEyeX + 20, eyebrowY);
-        ctx.stroke();
-
-        // 鼻子
-        ctx.beginPath();
-        ctx.moveTo(0, -10);
-        ctx.lineTo(-8, 25);
-        ctx.lineTo(0, 30);
-        ctx.lineTo(8, 25);
-        ctx.closePath();
-        ctx.fillStyle = '#e8b88a';
-        ctx.fill();
-
-        // 嘴巴
-        const mouthY = 60;
-        const mouthW = 30 * features.mouthWidth;
-        const mouthH = 5 + features.mouthOpen * 25;
-
-        ctx.beginPath();
-        if (features.mouthOpen > 0.2) {
-            // 张嘴
-            ctx.ellipse(0, mouthY, mouthW, mouthH, 0, 0, Math.PI * 2);
-            ctx.fillStyle = '#8b0000';
-            ctx.fill();
-            // 牙齿
-            ctx.beginPath();
-            ctx.rect(-mouthW + 5, mouthY - mouthH + 2, mouthW * 2 - 10, 8);
-            ctx.fillStyle = 'white';
-            ctx.fill();
-        } else {
-            // 闭嘴微笑
-            ctx.moveTo(-mouthW, mouthY);
-            ctx.quadraticCurveTo(0, mouthY + 15, mouthW, mouthY);
-            ctx.strokeStyle = '#c44';
-            ctx.lineWidth = 4;
-            ctx.stroke();
-        }
-
-        // 腮红
-        ctx.beginPath();
-        ctx.ellipse(-60, 30, 15, 10, 0, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 150, 150, 0.4)';
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(60, 30, 15, 10, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
-
-        // 标签
-        ctx.fillStyle = '#10b981';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.fillText('数字人形象', 10, height - 10);
     };
 
     // 绘制简约风格
@@ -459,16 +317,10 @@ const VideoAvatarPoC: React.FC = () => {
             setLandmarks(features);
 
             // 根据风格绘制
-            switch (avatarStyle) {
-                case 'cartoon':
-                    drawCartoonAvatar(avatarCtx, features);
-                    break;
-                case 'minimal':
-                    drawMinimalAvatar(avatarCtx, features);
-                    break;
-                case 'professional':
-                    drawProfessionalAvatar(avatarCtx, features);
-                    break;
+            if (avatarStyle === 'minimal') {
+                drawMinimalAvatar(avatarCtx, features);
+            } else {
+                drawProfessionalAvatar(avatarCtx, features);
             }
         }
 
@@ -600,7 +452,7 @@ const VideoAvatarPoC: React.FC = () => {
 
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-slate-400">形象风格:</span>
-                            {(['cartoon', 'minimal', 'professional'] as const).map((style) => (
+                            {(['minimal', 'professional'] as const).map((style) => (
                                 <button
                                     key={style}
                                     onClick={() => setAvatarStyle(style)}
@@ -610,7 +462,7 @@ const VideoAvatarPoC: React.FC = () => {
                                             : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                                     }`}
                                 >
-                                    {style === 'cartoon' ? '卡通' : style === 'minimal' ? '简约' : '专业'}
+                                    {style === 'minimal' ? '简约' : '专业'}
                                 </button>
                             ))}
                         </div>

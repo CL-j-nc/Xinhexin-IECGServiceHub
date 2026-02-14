@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useStaffAuth, getRoleDisplayName } from '../contexts/StaffAuthContext';
 
 interface UnderwritingRecord {
     decision_id: string;
@@ -18,6 +19,7 @@ interface UnderwritingRecord {
 
 const UnderwritingLookup: React.FC = () => {
     const navigate = useNavigate();
+    const { staff, canSubstituteAuth } = useStaffAuth();
     const [mobile, setMobile] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -183,8 +185,8 @@ const UnderwritingLookup: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     proposalId: selectedRecord.proposal_id,
-                    operatorId: 'L1-staff', // TODO: 从登录状态获取
-                    operatorRole: 'L1',     // TODO: 从登录状态获取
+                    operatorId: staff?.id || 'unknown',
+                    operatorRole: staff?.role || 'CS',
                     verificationMethod: substituteMethod,
                     reason: substituteReason.trim()
                 })
@@ -221,6 +223,19 @@ const UnderwritingLookup: React.FC = () => {
                         核保记录查询 <span className="text-slate-600">|</span> UNDERWRITING LOOKUP
                     </h1>
                 </div>
+                {staff && (
+                    <div className="flex items-center gap-2 text-xs">
+                        <span className="text-slate-500">{staff.name}</span>
+                        <span className={`px-2 py-0.5 rounded ${
+                            staff.role === 'L3' ? 'bg-purple-600/20 text-purple-400' :
+                            staff.role === 'L2' ? 'bg-blue-600/20 text-blue-400' :
+                            staff.role === 'L1' ? 'bg-cyan-600/20 text-cyan-400' :
+                            'bg-slate-700 text-slate-400'
+                        }`}>
+                            {getRoleDisplayName(staff.role)}
+                        </span>
+                    </div>
+                )}
             </div>
 
             <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
@@ -432,8 +447,8 @@ const UnderwritingLookup: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* L1+ 代完成认证 */}
-                            {!substituteSuccess && (
+                            {/* L1+ 代完成认证 - 仅 L1 及以上角色可见 */}
+                            {!substituteSuccess && canSubstituteAuth && (
                                 <>
                                     <button
                                         onClick={() => setShowSubstituteForm(!showSubstituteForm)}

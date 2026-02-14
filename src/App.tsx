@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { StaffAuthProvider } from './contexts/StaffAuthContext';
 import Home from './pages/Home';
 import ServiceHub from './pages/ServiceHub';
 import PolicyQuery from './pages/service/PolicyQuery';
@@ -20,8 +21,9 @@ import VideoAvatarPoC from './pages/VideoAvatarPoC';
 import AuthorityDocumentCenter from './pages/AuthorityDocumentCenter';
 
 const App = () => (
-  <Router>
-    <Routes>
+  <StaffAuthProvider>
+    <Router>
+      <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/group-underwriting-center" element={<GroupUnderwritingCenter />} />
       <Route path="/crm-dashboard" element={<CRMDashboard />} />
@@ -43,8 +45,9 @@ const App = () => (
         element={<StaffDashboard onExit={() => window.location.href = '/'} />}
       />
       <Route path="/conversation-hub" element={<Navigate to="/staff-dashboard" replace />} />
-    </Routes>
-  </Router>
+      </Routes>
+    </Router>
+  </StaffAuthProvider>
 );
 
 export default App;

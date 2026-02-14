@@ -1,11 +1,21 @@
 import React, { useState } from 'react';
+import { useStaffAuth, StaffRole, getRoleDisplayName } from '../contexts/StaffAuthContext';
 
 interface StaffLoginProps {
   onLogin: () => void;
   onBack: () => void;
 }
 
+// 测试账号配置
+const TEST_ACCOUNTS: Record<string, { password: string; role: StaffRole; name: string }> = {
+  '9527': { password: 'admin', role: 'CS', name: '客服小王' },
+  '1001': { password: 'admin', role: 'L1', name: '管理员张三' },
+  '2001': { password: 'admin', role: 'L2', name: '高级管理李四' },
+  '3001': { password: 'admin', role: 'L3', name: '超级管理赵五' },
+};
+
 const StaffLogin: React.FC<StaffLoginProps> = ({ onLogin, onBack }) => {
+  const { login } = useStaffAuth();
   const [id, setId] = useState('');
   const [pwd, setPwd] = useState('');
   const [error, setError] = useState('');
@@ -16,10 +26,16 @@ const StaffLogin: React.FC<StaffLoginProps> = ({ onLogin, onBack }) => {
     setLoading(true);
     setError('');
 
-    // Simulate server auth delay
     setTimeout(() => {
-      // Strict Validation
-      if (id === '9527' && pwd === 'admin') {
+      const account = TEST_ACCOUNTS[id];
+
+      if (account && account.password === pwd) {
+        // 登录成功，存储角色信息
+        login({
+          id: id,
+          name: account.name,
+          role: account.role
+        });
         onLogin();
       } else {
         setError('认证失败：工号或密码错误');
@@ -95,6 +111,26 @@ const StaffLogin: React.FC<StaffLoginProps> = ({ onLogin, onBack }) => {
               接入内网
             </button>
           </form>
+
+          {/* 测试账号提示 */}
+          <div className="mt-6 pt-4 border-t border-slate-700">
+            <p className="text-xs text-slate-500 mb-2">测试账号:</p>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {Object.entries(TEST_ACCOUNTS).map(([accountId, info]) => (
+                <div key={accountId} className="text-slate-400">
+                  <span className="text-emerald-500 font-mono">{accountId}</span>
+                  <span className="text-slate-600 mx-1">-</span>
+                  <span className={`${
+                    info.role === 'L3' ? 'text-purple-400' :
+                    info.role === 'L2' ? 'text-blue-400' :
+                    info.role === 'L1' ? 'text-cyan-400' : 'text-slate-400'
+                  }`}>
+                    {getRoleDisplayName(info.role)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="mt-8 text-center">

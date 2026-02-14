@@ -194,6 +194,31 @@ const StaffDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => {
               理赔报案、进度查询与案件处理
             </p>
           </button>
+
+          {/* 数字人视频核验 - PoC */}
+          <button
+            onClick={() => navigate('/video-avatar-poc')}
+            className="bg-gradient-to-br from-pink-900/50 to-pink-950 border border-pink-800/50 rounded-xl p-6 text-left hover:border-pink-600 hover:shadow-lg hover:shadow-pink-900/20 transition-all group relative"
+          >
+            <span className="absolute top-3 right-3 text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded uppercase tracking-wider">
+              PoC
+            </span>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-pink-800/50 rounded-lg flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-pink-400">
+                  <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
+                  <path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M15 3l2 2-2 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-white group-hover:text-pink-300 transition-colors">
+                数字人视频核验
+              </h3>
+            </div>
+            <p className="text-sm text-slate-400">
+              实时面部捕捉 + 数字人渲染演示
+            </p>
+          </button>
         </div>
       </div>
     </div>

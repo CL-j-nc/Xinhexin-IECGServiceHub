@@ -32,6 +32,14 @@ const UnderwritingLookup: React.FC = () => {
     const [resending, setResending] = useState(false);
     const [resendSuccess, setResendSuccess] = useState(false);
 
+    // 代认证状态 (L1+)
+    const [showSubstituteForm, setShowSubstituteForm] = useState(false);
+    const [substituteMethod, setSubstituteMethod] = useState<'PHONE' | 'VIDEO' | 'IN_PERSON'>('PHONE');
+    const [substituteReason, setSubstituteReason] = useState('');
+    const [substituting, setSubstituting] = useState(false);
+    const [substituteSuccess, setSubstituteSuccess] = useState(false);
+    const [substituteError, setSubstituteError] = useState<string | null>(null);
+
     // 手机号输入处理
     const handleMobileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value.replace(/\D/g, '').slice(0, 11);
@@ -101,6 +109,12 @@ const UnderwritingLookup: React.FC = () => {
         setSelectedRecord(record);
         setShowQrModal(true);
         setResendSuccess(false);
+        // 重置代认证状态
+        setShowSubstituteForm(false);
+        setSubstituteMethod('PHONE');
+        setSubstituteReason('');
+        setSubstituteSuccess(false);
+        setSubstituteError(null);
     };
 
     // 重发验证码
@@ -146,6 +160,49 @@ const UnderwritingLookup: React.FC = () => {
             alert('网络请求失败');
         } finally {
             setResending(false);
+        }
+    };
+
+    // L1+ 代完成认证
+    const handleSubstituteAuth = async () => {
+        if (!selectedRecord) return;
+
+        // 校验理由长度
+        if (substituteReason.trim().length < 10) {
+            setSubstituteError('操作理由至少需要10个字符');
+            return;
+        }
+
+        setSubstituting(true);
+        setSubstituteError(null);
+        setSubstituteSuccess(false);
+
+        try {
+            const res = await fetch('/api/admin/substitute-auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    proposalId: selectedRecord.proposal_id,
+                    operatorId: 'L1-staff', // TODO: 从登录状态获取
+                    operatorRole: 'L1',     // TODO: 从登录状态获取
+                    verificationMethod: substituteMethod,
+                    reason: substituteReason.trim()
+                })
+            });
+
+            const data = await res.json() as { success: boolean; auditLogId?: string; error?: string };
+
+            if (!data.success) {
+                setSubstituteError(data.error || '代认证操作失败');
+                return;
+            }
+
+            setSubstituteSuccess(true);
+            setShowSubstituteForm(false);
+        } catch (e) {
+            setSubstituteError('网络请求失败');
+        } finally {
+            setSubstituting(false);
         }
     };
 
@@ -275,6 +332,7 @@ const UnderwritingLookup: React.FC = () => {
                         <li>如客户有多条记录，请通过车牌号确认具体是哪一条</li>
                         <li>如客户收不到验证码，可点击"重发验证码"生成新验证码</li>
                         <li>重发后请将新验证码告知客户</li>
+                        <li className="text-cyan-300/80">[L1+] 如客户无法自行完成认证，可通过电话/视频/当面核实身份后代为完成</li>
                     </ul>
                 </div>
             </div>
@@ -363,6 +421,109 @@ const UnderwritingLookup: React.FC = () => {
                             <p className="text-xs text-slate-500 text-center">
                                 如客户收不到验证码，可点击重发生成新验证码
                             </p>
+
+                            {/* 分隔线 */}
+                            <div className="border-t border-slate-700 my-4" />
+
+                            {/* 代认证成功提示 */}
+                            {substituteSuccess && (
+                                <div className="mb-3 px-3 py-2 bg-emerald-900/30 border border-emerald-700/50 rounded-lg text-emerald-400 text-sm text-center">
+                                    已代客户完成身份认证
+                                </div>
+                            )}
+
+                            {/* L1+ 代完成认证 */}
+                            {!substituteSuccess && (
+                                <>
+                                    <button
+                                        onClick={() => setShowSubstituteForm(!showSubstituteForm)}
+                                        className="w-full py-2 text-left text-sm text-cyan-400 hover:text-cyan-300 flex items-center justify-between"
+                                    >
+                                        <span>[L1+] 代完成客户认证</span>
+                                        <span className="text-xs">{showSubstituteForm ? '▲' : '▼'}</span>
+                                    </button>
+
+                                    {showSubstituteForm && (
+                                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4 space-y-4">
+                                            {/* 身份核实方式 */}
+                                            <div>
+                                                <label className="block text-xs text-slate-400 mb-2">身份核实方式</label>
+                                                <div className="flex gap-3">
+                                                    {[
+                                                        { value: 'PHONE', label: '电话' },
+                                                        { value: 'VIDEO', label: '视频' },
+                                                        { value: 'IN_PERSON', label: '当面' }
+                                                    ].map(opt => (
+                                                        <label
+                                                            key={opt.value}
+                                                            className={`flex-1 py-2 px-3 rounded-lg border text-center text-sm cursor-pointer transition ${
+                                                                substituteMethod === opt.value
+                                                                    ? 'bg-cyan-600/20 border-cyan-500 text-cyan-400'
+                                                                    : 'bg-slate-800 border-slate-600 text-slate-400 hover:border-slate-500'
+                                                            }`}
+                                                        >
+                                                            <input
+                                                                type="radio"
+                                                                name="verificationMethod"
+                                                                value={opt.value}
+                                                                checked={substituteMethod === opt.value}
+                                                                onChange={() => setSubstituteMethod(opt.value as 'PHONE' | 'VIDEO' | 'IN_PERSON')}
+                                                                className="sr-only"
+                                                            />
+                                                            {opt.label}
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* 操作理由 */}
+                                            <div>
+                                                <label className="block text-xs text-slate-400 mb-2">
+                                                    操作理由 <span className="text-slate-500">（至少10字）</span>
+                                                </label>
+                                                <textarea
+                                                    value={substituteReason}
+                                                    onChange={(e) => {
+                                                        setSubstituteReason(e.target.value);
+                                                        if (substituteError) setSubstituteError(null);
+                                                    }}
+                                                    placeholder="请说明为何需要代客户完成认证..."
+                                                    rows={3}
+                                                    className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 resize-none"
+                                                />
+                                                <div className="flex justify-between mt-1">
+                                                    <span className={`text-xs ${substituteReason.length < 10 ? 'text-slate-500' : 'text-emerald-500'}`}>
+                                                        {substituteReason.length}/10
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* 错误提示 */}
+                                            {substituteError && (
+                                                <div className="text-red-400 text-xs bg-red-900/20 border border-red-800/50 rounded px-3 py-2">
+                                                    {substituteError}
+                                                </div>
+                                            )}
+
+                                            {/* 确认按钮 */}
+                                            <button
+                                                onClick={handleSubstituteAuth}
+                                                disabled={substituting || substituteReason.trim().length < 10}
+                                                className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition flex items-center justify-center gap-2"
+                                            >
+                                                {substituting ? (
+                                                    <>
+                                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                        提交中...
+                                                    </>
+                                                ) : (
+                                                    '确认代完成认证'
+                                                )}
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

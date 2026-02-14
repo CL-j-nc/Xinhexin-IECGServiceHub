@@ -20,6 +20,9 @@ import VideoAvatarPoC from './pages/VideoAvatarPoC';
 import AuditLogViewer from './pages/AuditLogViewer';
 import AdminClaimSubmit from './pages/AdminClaimSubmit';
 import AdminDataCorrection from './pages/AdminDataCorrection';
+import AdminSubstitutePayment from './pages/AdminSubstitutePayment';
+import AdminSubstituteSurrender from './pages/AdminSubstituteSurrender';
+import PendingReviews from './pages/PendingReviews';
 
 import AuthorityDocumentCenter from './pages/AuthorityDocumentCenter';
 
@@ -45,6 +48,9 @@ const App = () => (
       <Route path="/audit-log" element={<AuditLogViewer />} />
       <Route path="/admin/claim-submit" element={<AdminClaimSubmit />} />
       <Route path="/admin/data-correction" element={<AdminDataCorrection />} />
+      <Route path="/admin/substitute-payment" element={<AdminSubstitutePayment />} />
+      <Route path="/admin/substitute-surrender" element={<AdminSubstituteSurrender />} />
+      <Route path="/admin/pending-reviews" element={<PendingReviews />} />
       <Route path="/staff-login" element={<StaffLogin onLogin={() => { }} onBack={() => { }} />} />
       <Route
         path="/staff-dashboard"

@@ -24,6 +24,7 @@ const ACTION_LABELS: Record<string, string> = {
     'PAYMENT': '代支付',
     'SURRENDER': '代退保',
     'RESEND_AUTH': '重发验证码',
+    'CORRECT_DATA': '数据纠错',
 };
 
 const POWER_TYPE_LABELS: Record<string, { label: string; color: string }> = {

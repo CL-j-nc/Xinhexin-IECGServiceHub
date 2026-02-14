@@ -18,6 +18,8 @@ import CRMDashboard from './pages/CRMDashboard';
 import UnderwritingLookup from './pages/UnderwritingLookup';
 import VideoAvatarPoC from './pages/VideoAvatarPoC';
 import AuditLogViewer from './pages/AuditLogViewer';
+import AdminClaimSubmit from './pages/AdminClaimSubmit';
+import AdminDataCorrection from './pages/AdminDataCorrection';
 
 import AuthorityDocumentCenter from './pages/AuthorityDocumentCenter';
 
@@ -41,6 +43,8 @@ const App = () => (
       <Route path="/underwriting-lookup" element={<UnderwritingLookup />} />
       <Route path="/video-avatar-poc" element={<VideoAvatarPoC />} />
       <Route path="/audit-log" element={<AuditLogViewer />} />
+      <Route path="/admin/claim-submit" element={<AdminClaimSubmit />} />
+      <Route path="/admin/data-correction" element={<AdminDataCorrection />} />
       <Route path="/staff-login" element={<StaffLogin onLogin={() => { }} onBack={() => { }} />} />
       <Route
         path="/staff-dashboard"

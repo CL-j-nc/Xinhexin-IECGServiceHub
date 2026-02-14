@@ -134,6 +134,105 @@ export const onRequest: PagesFunction = async (context) => {
             });
         }
 
+        // POST /api/admin/submit-claim
+        // L2+ 代客户提交理赔
+        if (request.method === 'POST' && pathname.endsWith('/submit-claim')) {
+            const body = await request.json().catch(() => ({})) as {
+                policyId?: string;
+                operatorId?: string;
+                operatorRole?: string;
+                claimType?: string;
+                claimAmount?: number;
+                claimDescription?: string;
+                authorizationType?: string;
+                authorizationNote?: string;
+            };
+
+            if (!body.policyId) {
+                return jsonResponse({ success: false, error: '请提供保单号' }, 400);
+            }
+            if (!body.operatorRole || !['L2', 'L3'].includes(body.operatorRole)) {
+                return jsonResponse({ success: false, error: '无权限：仅 L2 及以上角色可执行此操作' }, 403);
+            }
+            if (!body.claimType) {
+                return jsonResponse({ success: false, error: '请选择理赔类型' }, 400);
+            }
+            if (!body.authorizationType) {
+                return jsonResponse({ success: false, error: '请选择授权方式' }, 400);
+            }
+
+            const resp = await fetch(`${API_BASE}/admin/submit-claim`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const data = await resp.json() as any;
+
+            if (!resp.ok || !data.success) {
+                return jsonResponse({
+                    success: false,
+                    error: data.error || '理赔提交失败'
+                }, resp.status || 400);
+            }
+
+            return jsonResponse({
+                success: true,
+                claimId: data.claimId,
+                auditLogId: data.auditLogId,
+                message: data.message || '理赔申请已提交'
+            });
+        }
+
+        // POST /api/admin/correct-data
+        // L1+ 数据纠错
+        if (request.method === 'POST' && pathname.endsWith('/correct-data')) {
+            const body = await request.json().catch(() => ({})) as {
+                targetType?: string;
+                targetId?: string;
+                operatorId?: string;
+                operatorRole?: string;
+                fieldName?: string;
+                oldValue?: string;
+                newValue?: string;
+                reason?: string;
+            };
+
+            if (!body.targetId) {
+                return jsonResponse({ success: false, error: '请提供目标ID' }, 400);
+            }
+            if (!body.operatorRole || !['L1', 'L2', 'L3'].includes(body.operatorRole)) {
+                return jsonResponse({ success: false, error: '无权限执行此操作' }, 403);
+            }
+            if (!body.fieldName) {
+                return jsonResponse({ success: false, error: '请指定修改字段' }, 400);
+            }
+            if (!body.reason || body.reason.length < 10) {
+                return jsonResponse({ success: false, error: '修改理由至少需要10个字符' }, 400);
+            }
+
+            const resp = await fetch(`${API_BASE}/admin/correct-data`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const data = await resp.json() as any;
+
+            if (!resp.ok || !data.success) {
+                return jsonResponse({
+                    success: false,
+                    error: data.error || '数据纠错失败'
+                }, resp.status || 400);
+            }
+
+            return jsonResponse({
+                success: true,
+                auditLogId: data.auditLogId,
+                message: data.message || '数据已修正'
+            });
+        }
+
         // GET /api/admin/audit-log
         // 查询审计日志
         if (request.method === 'GET' && pathname.endsWith('/audit-log')) {

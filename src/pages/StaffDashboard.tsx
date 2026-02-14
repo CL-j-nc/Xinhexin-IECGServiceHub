@@ -237,13 +237,65 @@ const StaffDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => {
             </p>
           </button>
 
+          {/* 数据纠错 - L1+ 可见 */}
+          {canSubstituteAuth && (
+            <button
+              onClick={() => navigate('/admin/data-correction')}
+              className="bg-gradient-to-br from-cyan-900/50 to-cyan-950 border border-cyan-800/50 rounded-xl p-6 text-left hover:border-cyan-600 hover:shadow-lg hover:shadow-cyan-900/20 transition-all group relative"
+            >
+              <span className="absolute top-3 right-3 text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded uppercase tracking-wider">
+                L1+
+              </span>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-cyan-800/50 rounded-lg flex items-center justify-center">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-cyan-400">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-white group-hover:text-cyan-300 transition-colors">
+                  数据纠错
+                </h3>
+              </div>
+              <p className="text-sm text-slate-400">
+                修正客户信息、投保单、保单数据错误
+              </p>
+            </button>
+          )}
+
+          {/* 代提理赔 - L2+ 可见 */}
+          {(staff?.role === 'L2' || staff?.role === 'L3') && (
+            <button
+              onClick={() => navigate('/admin/claim-submit')}
+              className="bg-gradient-to-br from-blue-900/50 to-blue-950 border border-blue-800/50 rounded-xl p-6 text-left hover:border-blue-600 hover:shadow-lg hover:shadow-blue-900/20 transition-all group relative"
+            >
+              <span className="absolute top-3 right-3 text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded uppercase tracking-wider">
+                L2+
+              </span>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-blue-800/50 rounded-lg flex items-center justify-center">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-blue-400">
+                    <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" stroke="currentColor" strokeWidth="2" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-white group-hover:text-blue-300 transition-colors">
+                  代提理赔
+                </h3>
+              </div>
+              <p className="text-sm text-slate-400">
+                代客户提交理赔申请（需授权）
+              </p>
+            </button>
+          )}
+
           {/* 审计日志 - L1+ 可见 */}
           {canSubstituteAuth && (
             <button
               onClick={() => navigate('/audit-log')}
               className="bg-gradient-to-br from-slate-800/50 to-slate-900 border border-slate-700 rounded-xl p-6 text-left hover:border-slate-500 hover:shadow-lg transition-all group relative"
             >
-              <span className="absolute top-3 right-3 text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded uppercase tracking-wider">
+              <span className="absolute top-3 right-3 text-[10px] bg-slate-500/20 text-slate-400 px-2 py-0.5 rounded uppercase tracking-wider">
                 L1+
               </span>
               <div className="flex items-center gap-3 mb-4">

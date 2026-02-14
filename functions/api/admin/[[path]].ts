@@ -41,7 +41,6 @@ export const onRequest: PagesFunction = async (context) => {
                 reason?: string;
             };
 
-            // 前端校验
             if (!body.proposalId) {
                 return jsonResponse({ success: false, error: '请提供投保单号' }, 400);
             }
@@ -58,7 +57,6 @@ export const onRequest: PagesFunction = async (context) => {
                 return jsonResponse({ success: false, error: '操作理由至少需要10个字符' }, 400);
             }
 
-            // 调用 xinhexin-api
             const resp = await fetch(`${API_BASE}/admin/substitute-auth`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -87,10 +85,82 @@ export const onRequest: PagesFunction = async (context) => {
             });
         }
 
-        // GET /api/admin/audit-log?proposalId=xxx
-        // 查询审计日志（预留，Phase 2 实现）
+        // POST /api/admin/upload-material
+        // 代客户补充材料 (Level 0)
+        if (request.method === 'POST' && pathname.endsWith('/upload-material')) {
+            const body = await request.json().catch(() => ({})) as {
+                proposalId?: string;
+                operatorId?: string;
+                operatorRole?: string;
+                materialType?: string;
+                materialNote?: string;
+            };
+
+            if (!body.proposalId) {
+                return jsonResponse({ success: false, error: '请提供投保单号' }, 400);
+            }
+            if (!body.operatorId) {
+                return jsonResponse({ success: false, error: '缺少操作人信息' }, 400);
+            }
+            if (!body.materialType) {
+                return jsonResponse({ success: false, error: '请选择材料类型' }, 400);
+            }
+
+            const resp = await fetch(`${API_BASE}/admin/upload-material`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    proposalId: body.proposalId,
+                    operatorId: body.operatorId,
+                    operatorRole: body.operatorRole || 'CS',
+                    materialType: body.materialType,
+                    materialNote: body.materialNote
+                })
+            });
+
+            const data = await resp.json() as any;
+
+            if (!resp.ok || !data.success) {
+                return jsonResponse({
+                    success: false,
+                    error: data.error || '材料补充失败'
+                }, resp.status || 400);
+            }
+
+            return jsonResponse({
+                success: true,
+                auditLogId: data.auditLogId,
+                message: data.message || '材料补充记录已保存'
+            });
+        }
+
+        // GET /api/admin/audit-log
+        // 查询审计日志
         if (request.method === 'GET' && pathname.endsWith('/audit-log')) {
-            return jsonResponse({ success: false, error: '功能开发中' }, 501);
+            const proposalId = url.searchParams.get('proposalId');
+            const operatorId = url.searchParams.get('operatorId');
+            const limit = url.searchParams.get('limit') || '50';
+
+            const params = new URLSearchParams();
+            if (proposalId) params.set('proposalId', proposalId);
+            if (operatorId) params.set('operatorId', operatorId);
+            params.set('limit', limit);
+
+            const resp = await fetch(`${API_BASE}/admin/audit-log?${params.toString()}`);
+            const data = await resp.json() as any;
+
+            if (!resp.ok || !data.success) {
+                return jsonResponse({
+                    success: false,
+                    error: data.error || '查询失败'
+                }, resp.status || 400);
+            }
+
+            return jsonResponse({
+                success: true,
+                logs: data.logs || [],
+                total: data.total || 0
+            });
         }
 
         return jsonResponse({ success: false, error: 'Not Found' }, 404);

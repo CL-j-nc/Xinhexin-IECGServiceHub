@@ -17,6 +17,7 @@ import GroupUnderwritingCenter from './pages/GroupUnderwritingCenter';
 import CRMDashboard from './pages/CRMDashboard';
 import UnderwritingLookup from './pages/UnderwritingLookup';
 import VideoAvatarPoC from './pages/VideoAvatarPoC';
+import AuditLogViewer from './pages/AuditLogViewer';
 
 import AuthorityDocumentCenter from './pages/AuthorityDocumentCenter';
 
@@ -39,6 +40,7 @@ const App = () => (
       <Route path="/crm/vehicle/:plateOrVin" element={<CRMVehicleDetail />} />
       <Route path="/underwriting-lookup" element={<UnderwritingLookup />} />
       <Route path="/video-avatar-poc" element={<VideoAvatarPoC />} />
+      <Route path="/audit-log" element={<AuditLogViewer />} />
       <Route path="/staff-login" element={<StaffLogin onLogin={() => { }} onBack={() => { }} />} />
       <Route
         path="/staff-dashboard"

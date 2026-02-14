@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StaffLogin from '../components/StaffLogin';
 import ConversationHub from '../components/ConversationHub';
+import { useStaffAuth, getRoleDisplayName } from '../contexts/StaffAuthContext';
 
 const StaffDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentView, setCurrentView] = useState<'hub' | 'conversation'>('hub');
   const navigate = useNavigate();
+  const { staff, logout, canSubstituteAuth } = useStaffAuth();
 
   if (!isAuthenticated) {
     return (
@@ -33,12 +35,27 @@ const StaffDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => {
             业务员工作台 <span className="text-slate-600">|</span> STAFF HUB
           </h1>
         </div>
-        <button
-          onClick={() => setIsAuthenticated(false)}
-          className="text-xs bg-red-900/30 text-red-400 hover:bg-red-900/50 px-3 py-1.5 rounded border border-red-900/50 transition-colors"
-        >
-          退出登录
-        </button>
+        <div className="flex items-center gap-4">
+          {staff && (
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-slate-400">{staff.name}</span>
+              <span className={`px-2 py-0.5 rounded ${
+                staff.role === 'L3' ? 'bg-purple-600/20 text-purple-400' :
+                staff.role === 'L2' ? 'bg-blue-600/20 text-blue-400' :
+                staff.role === 'L1' ? 'bg-cyan-600/20 text-cyan-400' :
+                'bg-slate-700 text-slate-400'
+              }`}>
+                {getRoleDisplayName(staff.role)}
+              </span>
+            </div>
+          )}
+          <button
+            onClick={() => { logout(); setIsAuthenticated(false); }}
+            className="text-xs bg-red-900/30 text-red-400 hover:bg-red-900/50 px-3 py-1.5 rounded border border-red-900/50 transition-colors"
+          >
+            退出登录
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -219,6 +236,32 @@ const StaffDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => {
               实时面部捕捉 + 数字人渲染演示
             </p>
           </button>
+
+          {/* 审计日志 - L1+ 可见 */}
+          {canSubstituteAuth && (
+            <button
+              onClick={() => navigate('/audit-log')}
+              className="bg-gradient-to-br from-slate-800/50 to-slate-900 border border-slate-700 rounded-xl p-6 text-left hover:border-slate-500 hover:shadow-lg transition-all group relative"
+            >
+              <span className="absolute top-3 right-3 text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded uppercase tracking-wider">
+                L1+
+              </span>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-slate-700/50 rounded-lg flex items-center justify-center">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-slate-400">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-white group-hover:text-slate-300 transition-colors">
+                  审计日志
+                </h3>
+              </div>
+              <p className="text-sm text-slate-400">
+                管理员操作记录查询与审计追溯
+              </p>
+            </button>
+          )}
         </div>
       </div>
     </div>

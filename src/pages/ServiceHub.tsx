@@ -14,13 +14,13 @@ const ServiceHub: React.FC = () => {
       title: '保单变更',
       description: '保单信息变更、批改申请与状态跟踪',
       route: '/service-hub/change',
-      status: '接口未接通'
+      status: '已接入'
     },
     {
       title: '批单管理',
       description: '批单流程进度、历史记录与结果回传',
       route: '/service-hub/endorsement',
-      status: '接口未接通'
+      status: '已接入'
     }
   ];
 

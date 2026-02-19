@@ -4,6 +4,7 @@ import { containsRiskContent, getStaticAnswer } from '../utils/riskControl';
 import { sendMessageToGemini } from '../services/geminiService';
 import { broadcastMessage, onBroadcastMessage } from '../services/eventBus';
 import { addMessage, createConversation } from '../services/conversationService';
+import { escalateToHumanAgent } from '../services/escalationService'; // 导入转接服务
 import { ConversationMessage, MessageRole } from '../services/conversation.types';
 import { fetchPolicyLifecycle, isPolicyFormatValid } from '../services/policyEngine';
 import { PolicyLifecycleData } from '../services/policyEngine.types';
@@ -160,6 +161,25 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
     setIsLoading(true);
 
     broadcastMessage(newUserMsg);
+
+    // --- 检查是否需要转人工客服 ---
+    const lowerTextToSend = textToSend.toLowerCase();
+    const needsHumanIntervention = lowerTextToSend.includes('转人工') || lowerTextToSend.includes('人工客服') || lowerTextToSend.includes('联系客服');
+
+    if (needsHumanIntervention) {
+      pushAiMessage(resolvedConversationId, '好的，我已收到您的请求。正在为您转接人工客服，请您在此期间保持在线。');
+      setIsLoading(false);
+      // 调用后端转接服务
+      await escalateToHumanAgent(
+        resolvedConversationId,
+        'client-uuid-placeholder', // 真实的客户ID需要从上下文获取
+        textToSend,
+        '用户主动请求转人工',
+        messages // 传递当前消息历史
+      );
+      return; // 阻止后续处理
+    }
+    // --- 转人工客服逻辑结束 ---
 
     const policyMatch = textToSend.match(POLICY_NO_PATTERN)?.[0];
     if (policyMatch) {

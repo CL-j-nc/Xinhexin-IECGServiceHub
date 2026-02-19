@@ -3,20 +3,14 @@ import ChatMessage from './ChatMessage';
 import { containsRiskContent, getStaticAnswer } from '../utils/riskControl';
 import { sendMessageToGemini } from '../services/geminiService';
 import { broadcastMessage, onBroadcastMessage } from '../services/eventBus';
-import { addMessage, createConversation } from '../services/conversationService'; // 新增导入，支持会话生成
+import { addMessage, createConversation } from '../services/conversationService';
 import { ConversationMessage, MessageRole } from '../services/conversation.types';
 import { fetchPolicyLifecycle, isPolicyFormatValid } from '../services/policyEngine';
 import { PolicyLifecycleData } from '../services/policyEngine.types';
+import { STATIC_QA } from '../constants'; // <-- 导入 STATIC_QA
 
 // Performance Optimization: Lazy load the heavy Voice Interface
 const VoiceCallInterface = React.lazy(() => import('./VoiceCallInterface'));
-
-const FAQ_QUESTIONS = [
-  "我邮箱收到的电子保单是乱码",
-  "我在网上查询的电子保单没有盖章",
-  "我已经改了保单上的车牌，怎么电子保单上的牌照没有更改?",
-  "如何查询保单的缴费状态"
-];
 
 const QUICK_ACTIONS = [
   { icon: 'fa-comments', label: '产品咨询', color: 'text-orange-400' },
@@ -48,13 +42,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 插入位置：状态声明区，支持会话 ID
   const [conversationId, setConversationId] = useState<string | null>(null);
   const conversationIdRef = useRef<string | null>(null);
 
-  // --- EVENT BUS INTEGRATION ---
   useEffect(() => {
-    // Listen for Supervisor Messages (Intervention)
     const unsubscribe = onBroadcastMessage((msg) => {
       if (conversationIdRef.current && msg.conversationId !== conversationIdRef.current) {
         return;
@@ -62,7 +53,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
       if (msg.role === MessageRole.AGENT) {
         setMessages(prev => [...prev, msg]);
         addMessage(msg.conversationId, msg);
-        setIsLoading(false); // Stop AI loading if supervisor intervenes
+        setIsLoading(false);
       }
     });
     return () => unsubscribe();
@@ -71,7 +62,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
   useEffect(() => {
     conversationIdRef.current = conversationId;
   }, [conversationId]);
-  // -----------------------------
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -141,21 +131,18 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
     }
   };
 
-  // Handle sending a message (text input or FAQ click)
   const handleSendMessage = async (textOverride?: string) => {
     const textToSend = textOverride || input.trim();
     if (!textToSend) return;
 
     setViewState('chat');
 
-    // 插入位置：函数体开头，会话初始化
     if (!conversationId) {
-      const newConv = createConversation('client-uuid'); // 模拟 clientId，实际可从用户上下文获取
+      const newConv = createConversation('client-uuid');
       setConversationId(newConv.conversationId);
       conversationIdRef.current = newConv.conversationId;
     }
 
-    // 1. Create User Message（扩展包含 conversationId）
     const resolvedConversationId = conversationIdRef.current || conversationId;
     if (!resolvedConversationId) return;
 
@@ -172,10 +159,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
     setInput('');
     setIsLoading(true);
 
-    // BROADCAST: Tell the supervisor dashboard that user spoke（扩展支持 conversationId）
     broadcastMessage(newUserMsg);
-
-    // --- LOGIC FLOW ---
 
     const policyMatch = textToSend.match(POLICY_NO_PATTERN)?.[0];
     if (policyMatch) {
@@ -188,7 +172,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
       return;
     }
 
-    // 2. Risk Control Check (Local)
     if (containsRiskContent(textToSend)) {
       setTimeout(() => {
         const riskMsg: ConversationMessage = {
@@ -201,13 +184,12 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
         };
         setMessages(prev => [...prev, riskMsg]);
         addMessage(resolvedConversationId, riskMsg);
-        broadcastMessage(riskMsg); // Broadcast system/risk response
+        broadcastMessage(riskMsg);
         setIsLoading(false);
       }, 500);
       return;
     }
 
-    // 3. Static Q&A Check
     const staticAnswer = getStaticAnswer(textToSend);
     if (staticAnswer) {
       setTimeout(() => {
@@ -220,13 +202,12 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
         };
         setMessages(prev => [...prev, staticMsg]);
         addMessage(resolvedConversationId, staticMsg);
-        broadcastMessage(staticMsg); // Broadcast AI response
+        broadcastMessage(staticMsg);
         setIsLoading(false);
       }, 600);
       return;
     }
 
-    // 4. AI Processing (Gemini)
     try {
       const aiResponseText = await sendMessageToGemini(textToSend);
 
@@ -238,12 +219,11 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
         timestamp: new Date()
       };
 
-      // Check if loading is still true. If false, it means Supervisor interrupted!
       setIsLoading(prevIsLoading => {
         if (prevIsLoading) {
           setMessages(prev => [...prev, aiMsg]);
           addMessage(resolvedConversationId, aiMsg);
-          broadcastMessage(aiMsg); // Broadcast AI response
+          broadcastMessage(aiMsg);
           return false;
         }
         return false;
@@ -290,12 +270,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
 
   return (
     <div className={wrapperClassName}>
-
-      {/* Chat Window */}
       {isOpen && (
         <div className={`${panelClassName} bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-gray-100`}>
-
-          {/* Header */}
           <div className="p-4 bg-white border-b border-gray-100 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center">
@@ -320,8 +296,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
               )}
             </div>
           </div>
-
-          {/* Body */}
           {isVoiceMode ? (
             <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500">语音接口加载中...</div>}>
               <VoiceCallInterface onHangup={() => setIsVoiceMode(false)} />
@@ -330,13 +304,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
             <>
               {viewState === 'Home' && (
                 <div className="p-4 pb-20 flex-1 overflow-y-auto space-y-6">
-                  {/* Greeting */}
                   <div className="text-center py-4">
                     <h2 className="text-lg font-medium text-gray-800 mb-2">您好！</h2>
                     <p className="text-sm text-gray-500">我是您的24小时在线企业保险管家，请随时告诉我您的疑问。</p>
                   </div>
-
-                  {/* Quick Actions */}
                   <div className="grid grid-cols-2 gap-3">
                     {QUICK_ACTIONS.map((action, i) => (
                       <button
@@ -349,8 +320,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
                       </button>
                     ))}
                   </div>
-
-                  {/* Tabs */}
                   <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hidden">
                     {TABS.map((tab) => (
                       <button
@@ -363,7 +332,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
                       </button>
                     ))}
                   </div>
-
                   {/* FAQ List */}
                   <div className="space-y-1">
                     {FAQ_QUESTIONS.map((q, i) => (
@@ -377,8 +345,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
                       </button>
                     ))}
                   </div>
-
-                  {/* Refresh Button */}
                   <div className="py-3 border-t border-gray-50 text-center">
                     <button className="text-emerald-500 text-sm flex items-center justify-center gap-1 mx-auto hover:text-emerald-600 transition-colors">
                       <i className="fa-solid fa-rotate text-xs"></i> 换一换
@@ -386,20 +352,16 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
                   </div>
                 </div>
               )}
-
               {viewState === 'chat' && (
                 <div className="p-4 pb-20 min-h-full flex-1 overflow-y-auto">
-                  {/* Default Welcomer if empty */}
                   {messages.length === 0 && (
                     <div className="text-center py-8 opacity-50">
                       <p className="text-sm">开始与企业保险管家对话...</p>
                     </div>
                   )}
-
                   {messages.map((msg) => (
                     <ChatMessage key={msg.id} message={msg} />
                   ))}
-
                   {isLoading && (
                     <div className="flex justify-start mb-4">
                       <div className="flex items-end gap-2">
@@ -421,15 +383,12 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
               )}
             </>
           )}
-
-          {/* Bottom Input Area */}
           {!isVoiceMode && (
             <div className="p-3 bg-white border-t border-gray-100 shrink-0 safe-area-bottom">
               <div className="flex items-center gap-2">
                 <button className="w-8 h-8 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
                   <i className="fa-regular fa-face-smile text-xl"></i>
                 </button>
-
                 <div className="flex-1 relative">
                   <input
                     type="text"
@@ -441,7 +400,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
                     disabled={isLoading}
                   />
                 </div>
-
                 <button
                   onClick={() => handleSendMessage()}
                   disabled={!input.trim() || isLoading}
@@ -449,18 +407,14 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
                 >
                   发送
                 </button>
-
                 <button className="w-8 h-8 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
                   <i className="fa-solid fa-circle-plus text-xl"></i>
                 </button>
               </div>
             </div>
           )}
-
         </div>
       )}
-
-      {/* Launcher Button */}
       {!isEmbedded && !isOpen && (
         <button
           onClick={() => setIsOpen(true)}
@@ -470,7 +424,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
           <i className="fa-solid fa-comment-dots text-3xl group-hover:animate-pulse"></i>
         </button>
       )}
-
     </div>
   );
 };

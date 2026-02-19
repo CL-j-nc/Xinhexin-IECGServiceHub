@@ -39,6 +39,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
 
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isAgentTyping, setIsAgentTyping] = useState(false); // 新增状态：客服是否正在输入
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -159,6 +160,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
     addMessage(resolvedConversationId, newUserMsg);
     setInput('');
     setIsLoading(true);
+    setIsAgentTyping(true); // 客户发送消息后，显示客服正在输入
 
     broadcastMessage(newUserMsg);
 
@@ -169,6 +171,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
     if (needsHumanIntervention) {
       pushAiMessage(resolvedConversationId, '好的，我已收到您的请求。正在为您转接人工客服，请您在此期间保持在线。');
       setIsLoading(false);
+      setIsAgentTyping(false); // 转人工，停止显示正在输入
       // 调用后端转接服务
       await escalateToHumanAgent(
         resolvedConversationId,
@@ -184,11 +187,13 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
     const policyMatch = textToSend.match(POLICY_NO_PATTERN)?.[0];
     if (policyMatch) {
       await handlePolicyLookup(policyMatch, resolvedConversationId);
+      setIsAgentTyping(false); // 回复后停止显示正在输入
       return;
     }
 
     if (/保单/.test(textToSend) && /(查询|查|核验)/.test(textToSend)) {
       pushAiMessage(resolvedConversationId, '请提供 65/66 开头的团体保单号，我将为您核验保单状态。');
+      setIsAgentTyping(false); // 回复后停止显示正在输入
       return;
     }
 
@@ -206,6 +211,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
         addMessage(resolvedConversationId, riskMsg);
         broadcastMessage(riskMsg);
         setIsLoading(false);
+        setIsAgentTyping(false); // 回复后停止显示正在输入
       }, 500);
       return;
     }
@@ -224,6 +230,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
         addMessage(resolvedConversationId, staticMsg);
         broadcastMessage(staticMsg);
         setIsLoading(false);
+        setIsAgentTyping(false); // 回复后停止显示正在输入
       }, 600);
       return;
     }
@@ -234,6 +241,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
     if (!policyMatch && !(/保单/.test(textToSend) && /(查询|查|核验)/.test(textToSend))) {
         pushAiMessage(resolvedConversationId, '抱歉，我暂时无法直接回答您的问题。您可以尝试换种方式提问，或者说明需要咨询的具体业务（例如：保单变更、理赔申请）。如果问题紧急，请告知我，我可以尝试为您转接人工客服。');
         setIsLoading(false);
+        setIsAgentTyping(false); // 回复后停止显示正在输入
         return;
     }
     // --- 新增逻辑结束 ---
@@ -255,6 +263,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
           setMessages(prev => [...prev, aiMsg]);
           addMessage(resolvedConversationId, aiMsg);
           broadcastMessage(aiMsg);
+          setIsAgentTyping(false); // 回复后停止显示正在输入
           return false;
         }
         return false;
@@ -273,6 +282,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
       addMessage(resolvedConversationId, errorMsg);
       broadcastMessage(errorMsg);
       setIsLoading(false);
+      setIsAgentTyping(false); // 发生错误也停止显示正在输入
     }
   };
 
@@ -416,9 +426,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
           )}
           {!isVoiceMode && (
             <div className="p-3 bg-white border-t border-gray-100 shrink-0 safe-area-bottom">
-              {isLoading && (
+              {isAgentTyping && (
                 <div className="text-sm text-gray-500 mb-2 px-1">
-                  对方正在输入...
+                  客服正在输入...
                 </div>
               )}
               <div className="flex items-center gap-2">

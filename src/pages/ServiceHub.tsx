@@ -21,12 +21,6 @@ const ServiceHub: React.FC = () => {
       description: '批单流程进度、历史记录与结果回传',
       route: '/service-hub/endorsement',
       status: '已接入'
-    },
-    {
-      title: '在线客服',
-      description: '智能客服系统接入与工单管理',
-      route: '/service-hub/online-cs',
-      status: '开发中'
     }
   ];
 

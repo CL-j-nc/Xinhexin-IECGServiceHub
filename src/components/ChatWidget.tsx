@@ -208,6 +208,17 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
       return;
     }
 
+    // --- 新增逻辑：处理未匹配静态回复的问题 ---
+    // 如果没有静态回复，并且不是保单查询/一般保单业务，也不是风险内容（这些已在前面处理）
+    // 则提供更友好的引导信息。
+    if (!policyMatch && !(/保单/.test(textToSend) && /(查询|查|核验)/.test(textToSend))) {
+        pushAiMessage(resolvedConversationId, '抱歉，我暂时无法直接回答您的问题。您可以尝试换种方式提问，或者说明需要咨询的具体业务（例如：保单变更、理赔申请）。如果问题紧急，请告知我，我可以尝试为您转接人工客服。');
+        setIsLoading(false);
+        return;
+    }
+    // --- 新增逻辑结束 ---
+
+    // 4. AI Processing (Gemini)
     try {
       const aiResponseText = await sendMessageToGemini(textToSend);
 
@@ -385,6 +396,11 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
           )}
           {!isVoiceMode && (
             <div className="p-3 bg-white border-t border-gray-100 shrink-0 safe-area-bottom">
+              {isLoading && (
+                <div className="text-sm text-gray-500 mb-2 px-1">
+                  对方正在输入...
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <button className="w-8 h-8 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
                   <i className="fa-regular fa-face-smile text-xl"></i>

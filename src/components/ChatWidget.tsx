@@ -9,6 +9,7 @@ import { ConversationMessage, MessageRole } from '../services/conversation.types
 import { fetchPolicyLifecycle, isPolicyFormatValid } from '../services/policyEngine';
 import { PolicyLifecycleData } from '../services/policyEngine.types';
 import { STATIC_QA } from '../constants'; // <-- 导入 STATIC_QA
+import { FAQ_CONFIG } from '../constants/faq.config';
 
 // Performance Optimization: Lazy load the heavy Voice Interface
 const VoiceCallInterface = React.lazy(() => import('./VoiceCallInterface'));
@@ -539,13 +540,13 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
                   </div>
                   {/* FAQ List */}
                   <div className="space-y-1">
-                    {FAQ_QUESTIONS.map((q, i) => (
+                    {FAQ_CONFIG.map((item, i) => (
                       <button
                         key={i}
-                        onClick={() => handleFAQClick(q)}
+                        onClick={() => handleFAQClick(item.title)}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex justify-between items-center group transition-colors border-b border-gray-50 last:border-0"
                       >
-                        <span className="line-clamp-1">{q}</span>
+                        <span className="line-clamp-1">{item.title}</span>
                         <i className="fa-solid fa-chevron-right text-gray-300 text-xs group-hover:text-emerald-500"></i>
                       </button>
                     ))}

@@ -376,7 +376,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
                       <button
                         key={category}
                         onClick={() => setActiveTab(category)}
-                        className={`px-4 py-1.5 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${activeTab === category ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        className={`px-4 py-1.5 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${activeTab === category ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
                           }`}
                       >
                         {category}

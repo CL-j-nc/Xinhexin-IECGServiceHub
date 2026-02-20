@@ -258,16 +258,273 @@ export const FAQ_CONFIG: FAQItem[] = [
         category: '理赔咨询',
         title: '理赔款多久能到账？',
         response: {
-            layer1_authoritative: '一般情况下，资料齐全的理赔案件会在 5-10 个工作日内完成审核并支付。',
+            layer1_authoritative: '一般情况下，资料齐全的理赔案件会在 5-10 个工作日内完成审核并支付。'
+        }
+    },
+    {
+        id: 'claim_online_submission',
+        category: '理赔咨询',
+        title: '理赔资料可以通过线上提交吗？',
+        response: {
+            layer1_authoritative: '是的，您可以通过“理赔中心”在线提交理赔申请和上传相关资料。',
             layer2_explanation: [
-                '理赔审核时间视案件复杂程度而定，简单案件通常 5 个工作日内完成。',
-                '审核通过后，理赔款将在 1-3 个工作日内转入您指定的银行账户。',
-                '如超过预期时间未到账，请联系您的客户经理查询进度。'
+                '登录理赔中心，选择“在线报案”或“资料上传”功能。',
+                '按照系统提示填写信息并上传照片或扫描件。',
+                '在线提交可以大大缩短理赔处理时间。'
             ],
             layer3_action: {
                 type: 'internal_link',
-                label: '查看理赔进度',
+                label: '前往理赔中心',
                 target: '/claim-center'
+            }
+        }
+    },
+    {
+        id: 'claim_special_group_process',
+        category: '理赔咨询',
+        title: '大宗团体险的理赔特殊流程有哪些？',
+        response: {
+            layer1_authoritative: '大宗团体险的理赔通常设有专属通道，并由客户经理进行一对一指导。',
+            layer2_explanation: [
+                '针对大宗团体客户，我们提供定制化的理赔服务流程。',
+                '您的专属客户经理会协助您进行报案、资料收集和提交。',
+                '理赔进度可通过专属平台或客户经理进行查询。'
+            ],
+            layer3_action: {
+                type: 'none'
+            }
+        }
+    },
+
+    // 投保指南
+    {
+        id: 'uw_new_enterprise_application',
+        category: '投保指南',
+        title: '新企业如何购买团体保险？',
+        response: {
+            layer1_authoritative: '新企业购买团体保险，请联系我们的业务专家，他们将根据您的企业需求提供专业的投保方案。',
+            layer2_explanation: [
+                '提供企业基本信息和员工数量、职业构成等。',
+                '业务专家将根据您企业的风险特点和福利预算，定制合适的保险产品组合。',
+                '我们将协助您完成从方案设计到保单生效的全流程服务。'
+            ],
+            layer3_action: {
+                type: 'none'
+            }
+        }
+    },
+    {
+        id: 'uw_product_types',
+        category: '投保指南',
+        title: '团体险产品有哪些种类？',
+        response: {
+            layer1_authoritative: '我们提供包括团体健康险、团体意外险、团体寿险、团体年金险以及团体车险等多种产品。',
+            layer2_explanation: [
+                '团体健康险：涵盖医疗费用、重疾保障等。',
+                '团体意外险：提供员工因意外伤害导致的医疗、伤残或身故保障。',
+                '团体寿险：为员工提供身故或全残保障。',
+                '团体年金险：为员工提供退休养老规划。',
+                '团体车险：针对企业车队提供车辆损失、第三者责任等保障。'
+            ],
+            layer3_action: {
+                type: 'none'
+            }
+        }
+    },
+    {
+        id: 'uw_customized_solutions',
+        category: '投保指南',
+        title: '如何为员工定制合适的保险方案？',
+        response: {
+            layer1_authoritative: '我们提供定制化的保险方案设计服务，以满足您员工的多样化保障需求。',
+            layer2_explanation: [
+                '请与我们的业务专家进行详细沟通，说明您的预算、员工福利目标和企业特点。',
+                '专家将根据您的需求，在各类团体险产品中进行组合配置。',
+                '方案将兼顾员工保障的全面性与企业成本的效益性。'
+            ],
+            layer3_action: {
+                type: 'none'
+            }
+        }
+    },
+    {
+        id: 'uw_rider_introduction',
+        category: '投保指南',
+        title: '什么是附加险？',
+        response: {
+            layer1_authoritative: '附加险是主险合同的补充，它不能独立投保，必须依附于主险合同。',
+            layer2_explanation: [
+                '附加险通常用于扩大主险的保障范围，提供额外的特定风险保障。',
+                '常见的附加险包括：附加医疗、附加重疾、附加意外医疗等。',
+                '投保附加险可以使您的保障方案更具灵活性和个性化。'
+            ],
+            layer3_action: {
+                type: 'none'
+            }
+        }
+    },
+    {
+        id: 'uw_required_documents',
+        category: '投保指南',
+        title: '购买团体险需要提供哪些企业资料？',
+        response: {
+            layer1_authoritative: '购买团体险通常需要提供企业营业执照副本、组织机构代码证（或统一社会信用代码证）、税务登记证等基本资料。',
+            layer2_explanation: [
+                '此外，还可能需要提供员工花名册、企业法人身份证明等。',
+                '具体所需资料清单，请咨询您的业务专家，他们会提供详细指导。',
+                '请确保您提供的所有资料真实、完整、有效。'
+            ],
+            layer3_action: {
+                type: 'none'
+            }
+        }
+    },
+
+    // 账户管理
+    {
+        id: 'acct_password_reset',
+        category: '账户管理',
+        title: '如何修改我的登录密码？',
+        response: {
+            layer1_authoritative: '为了您的账户安全，修改密码请通过官方网站或App的账户设置页面进行操作。',
+            layer2_explanation: [
+                '登录您的企业账户，进入“账户设置”或“安全中心”。',
+                '找到“修改密码”选项，按照提示完成身份验证并设置新密码。',
+                '请务必设置包含大小写字母、数字和特殊符号的复杂密码。'
+            ],
+            layer3_action: {
+                type: 'none'
+            }
+        }
+    },
+    {
+        id: 'acct_forgot_password',
+        category: '账户管理',
+        title: '忘记了账户密码怎么办？',
+        response: {
+            layer1_authoritative: '如忘记密码，请点击登录页面的“忘记密码”链接进行重置。',
+            layer2_explanation: [
+                '在登录页面点击“忘记密码”选项。',
+                '系统将引导您通过注册手机号或邮箱进行身份验证，然后设置新密码。',
+                '如果遇到问题，请联系人工客服寻求帮助。'
+            ],
+            layer3_action: {
+                type: 'none'
+            }
+        }
+    },
+    {
+        id: 'acct_bind_phone_email',
+        category: '账户管理',
+        title: '如何绑定或更换手机号？',
+        response: {
+            layer1_authoritative: '您可以通过账户设置页面绑定或更换手机号/邮箱，以便接收通知和快速找回密码。',
+            layer2_explanation: [
+                '登录您的企业账户，进入“账户设置”或“个人资料”页面。',
+                '找到“手机号/邮箱绑定”或“联系方式”选项，按照提示进行操作。',
+                '在更换手机号时，可能需要进行旧手机号的验证。'
+            ],
+            layer3_action: {
+                type: 'none'
+            }
+        }
+    },
+    {
+        id: 'acct_multi_admin',
+        category: '账户管理',
+        title: '可以设置多个管理员账户吗？',
+        response: {
+            layer1_authoritative: '我们支持为企业账户设置多个不同权限的管理员账户，以满足团队协作需求。',
+            layer2_explanation: [
+                '主管理员可以登录账户，在“用户管理”或“权限设置”中添加新的管理员。',
+                '您可以为不同的管理员分配不同的操作权限，例如：只读、保单管理、理赔提交等。',
+                '设置多个管理员有助于提升账户管理的效率和安全性。'
+            ],
+            layer3_action: {
+                type: 'none'
+            }
+        }
+    },
+
+    // 其他
+    {
+        id: 'other_hotline',
+        category: '其他',
+        title: '你们的客户服务热线是多少？',
+        response: {
+            layer1_authoritative: '我们的 VIP 客户服务专线是 400-800-8888。',
+            layer2_explanation: [
+                '该热线为您提供24小时不间断的专业咨询服务。',
+                '如遇紧急情况，请优先拨打此号码。',
+                '您也可以通过在线聊天功能获取快速帮助。'
+            ],
+            layer3_action: {
+                type: 'none'
+            }
+        }
+    },
+    {
+        id: 'other_address',
+        category: '其他',
+        title: '公司地址在哪里？',
+        response: {
+            layer1_authoritative: '我们的总部地址：北京市金融街123号。',
+            layer2_explanation: [
+                '您可以乘坐地铁2号线或4号线到达，交通便利。',
+                '来访前请提前预约，以便我们为您做好接待安排。',
+                '如需邮寄资料，请寄至此地址。'
+            ],
+            layer3_action: {
+                type: 'none'
+            }
+        }
+    },
+    {
+        id: 'other_service_hours',
+        category: '其他',
+        title: '服务时间是什么时候？',
+        response: {
+            layer1_authoritative: '大宗业务服务时间为周一至周五，上午 9:00 至 下午 6:00。',
+            layer2_explanation: [
+                '周末及法定节假日暂不提供人工服务，但您可以通过自助系统进行查询和办理。',
+                '在线智能客服提供24小时服务。',
+                '如遇紧急情况，请拨打客户服务热线。'
+            ],
+            layer3_action: {
+                type: 'none'
+            }
+        }
+    },
+    {
+        id: 'other_product_info',
+        category: '其他',
+        title: '如何获取最新产品信息？',
+        response: {
+            layer1_authoritative: '您可以通过我们的官方网站、企业公众号或联系您的客户经理获取最新产品信息。',
+            layer2_explanation: [
+                '官方网站会定期更新产品介绍、保障方案和行业动态。',
+                '关注企业公众号，及时获取新品发布、优惠活动等通知。',
+                '您的客户经理会根据您的需求，推荐最适合您企业的最新产品。'
+            ],
+            layer3_action: {
+                type: 'none'
+            }
+        }
+    },
+    {
+        id: 'other_complaint',
+        category: '其他',
+        title: '对产品或服务不满意如何投诉？',
+        response: {
+            layer1_authoritative: '如果您对我们的产品或服务有任何不满意，可以通过以下渠道进行投诉：',
+            layer2_explanation: [
+                '拨打客户服务热线，向客服人员说明您的问题。',
+                '在官方网站的“客户服务”或“意见反馈”页面提交书面投诉。',
+                '联系您的专属客户经理，他们会协助您处理投诉事宜。',
+                '我们承诺对所有投诉进行认真调查并及时回复。'
+            ],
+            layer3_action: {
+                type: 'none'
             }
         }
     }

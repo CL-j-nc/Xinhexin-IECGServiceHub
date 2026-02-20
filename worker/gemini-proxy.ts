@@ -71,7 +71,7 @@ FAILURE HANDLING:
       };
 
       const resp = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=" +
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
         env.GEMINI_API_KEY,
         {
           method: "POST",

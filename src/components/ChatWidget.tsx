@@ -21,7 +21,7 @@ const QUICK_ACTIONS = [
   { icon: 'fa-ticket', label: '更多服务', color: 'text-orange-600' }
 ];
 
-const TABS = ['平台功能', '车险理赔', '承保问题', '企业投保附加险'];
+// Removed: const TABS = ['平台功能', '车险理赔', '承保问题', '企业投保附加险'];
 
 interface ChatWidgetProps {
   mode?: 'widget' | 'embedded';
@@ -36,12 +36,15 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
   const [isOpen, setIsOpen] = useState(isEmbedded || initialOpen);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [viewState, setViewState] = useState<'Home' | 'chat'>('Home');
-  const [activeTab, setActiveTab] = useState('平台功能');
+
+  // 动态生成 FAQ 分类标签
+  const faqCategories = Array.from(new Set(FAQ_CONFIG.map(item => item.category)));
+  const [activeTab, setActiveTab] = useState(faqCategories[0]); // 默认激活第一个FAQ分类
 
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAgentTyping, setIsAgentTyping] = useState(false); // 新增状态：客服是否正在输入
-  const [isVoiceCallActive, setIsVoiceCallActive] = useState(false); // 新增：语音通话是否激活
+  // Removed: const [isVoiceCallActive, setIsVoiceCallActive] = useState(false); // 新增：语音通话是否激活
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -299,160 +302,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
     handleSendMessage(question);
   };
 
-  const sendSignalingMessage = (type: string, payload: any) => {
-    if (websocketRef.current && websocketRef.current.readyState === WebSocket.OPEN) {
-      const message = JSON.stringify({ type, payload, conversationId: conversationIdRef.current });
-      websocketRef.current.send(message);
-    } else {
-      console.warn('WebSocket is not open. Cannot send signaling message.');
-    }
-  };
-
-  // WebRTC 相关状态和对象
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
-  const remoteAudioRef = useRef<HTMLAudioElement | null>(null); // 用于播放远程音频
-  const websocketRef = useRef<WebSocket | null>(null);
-
-  // 确保在组件卸载时清理 WebRTC 资源
-  useEffect(() => {
-    return () => {
-      hangupVoiceCall(); // 清理通话
-      websocketRef.current?.close(); // 关闭 WebSocket 连接
-    };
-  }, []);
-
-  const startVoiceCall = async () => {
-    if (isVoiceCallActive) return;
-
-    console.log('[WebRTC] 正在发起语音通话...');
-    try {
-      // 1. 获取本地音流
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      localStreamRef.current = stream;
-      setIsVoiceCallActive(true);
-
-      // 2. 创建 RTCPeerConnection
-      const pc = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }], // 使用公共STUN服务器
-      });
-      peerConnectionRef.current = pc;
-
-      // 3. 将本地音流添加到 RTCPeerConnection
-      stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
-      // 4. 处理 ICE 候选
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          console.log('[WebRTC] 发送 ICE Candidate:', event.candidate);
-          sendSignalingMessage('ice-candidate', event.candidate);
-        }
-      };
-
-      // 5. 处理远程媒体流
-      pc.ontrack = (event) => {
-        console.log('[WebRTC] 收到远程媒体流', event.streams[0]);
-        if (remoteAudioRef.current) {
-          remoteAudioRef.current.srcObject = event.streams[0];
-        }
-      };
-
-      // 6. 处理连接状态变化
-      pc.onconnectionstatechange = () => {
-        console.log('[WebRTC] 连接状态:', pc.connectionState);
-        if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-          console.log('[WebRTC] 连接断开或失败，自动挂断。');
-          hangupVoiceCall();
-        }
-      };
-
-      // 7. 创建并发送 Offer (SDP)
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      console.log('[WebRTC] 发送 SDP Offer:', offer);
-      sendSignalingMessage('offer', offer);
-
-      // 8. 初始化 WebSocket 连接（如果尚未连接）
-      if (!websocketRef.current || websocketRef.current.readyState === WebSocket.CLOSED) {
-        websocketRef.current = new WebSocket('ws://localhost:8080/ws'); // 替换为你的信令服务器地址
-        websocketRef.current.onopen = () => {
-          console.log('[WebSocket] 连接成功');
-          // 连接成功后可以立即发送 Offer 或其他初始信令
-        };
-        websocketRef.current.onmessage = async (event) => {
-          const message = JSON.parse(event.data);
-          console.log('[WebSocket] 收到信令消息:', message);
-
-          if (message.conversationId !== conversationIdRef.current) {
-            console.warn('[WebSocket] 收到非当前会话的信令消息，忽略。');
-            return;
-          }
-
-          if (message.type === 'offer') {
-            await pc.setRemoteDescription(new RTCSessionDescription(message.payload));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            sendSignalingMessage('answer', answer);
-          } else if (message.type === 'answer') {
-            await pc.setRemoteDescription(new RTCSessionDescription(message.payload));
-          } else if (message.type === 'ice-candidate') {
-            await pc.addIceCandidate(new RTCIceCandidate(message.payload));
-          } else if (message.type === 'hangup') {
-            console.log('[WebRTC] 收到挂断信令');
-            hangupVoiceCall();
-          }
-        };
-        websocketRef.current.onclose = () => {
-          console.log('[WebSocket] 连接关闭');
-          hangupVoiceCall(); // WebSocket 关闭时也挂断通话
-        };
-        websocketRef.current.onerror = (error) => {
-          console.error('[WebSocket] 连接错误:', error);
-          hangupVoiceCall(); // WebSocket 错误时也挂断通话
-        };
-      }
-
-
-      // 在这里添加一个隐藏的 audio 元素用于播放远程音频
-      if (!remoteAudioRef.current) {
-        remoteAudioRef.current = document.createElement('audio');
-        remoteAudioRef.current.autoplay = true;
-        remoteAudioRef.current.style.display = 'none';
-        document.body.appendChild(remoteAudioRef.current);
-      }
-
-    } catch (error) {
-      console.error('[WebRTC] 发起语音通话失败:', error);
-      setIsVoiceCallActive(false);
-      // 可以给用户一个错误提示
-      pushAiMessage(conversationIdRef.current!, '发起语音通话失败，请稍后再试。', true);
-    }
-  };
-
-  const hangupVoiceCall = () => {
-    console.log('[WebRTC] 正在挂断语音通话...');
-
-    // 发送挂断信令
-    sendSignalingMessage('hangup', {});
-
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-      peerConnectionRef.current = null;
-    }
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
-      localStreamRef.current = null;
-    }
-    if (remoteAudioRef.current) {
-      remoteAudioRef.current.pause();
-      remoteAudioRef.current.srcObject = null;
-      // remoteAudioRef.current.remove(); // 不再自动移除，由浏览器自行管理
-      remoteAudioRef.current = null;
-    }
-    setIsVoiceCallActive(false);
-
-    // 不需要在这里关闭 WebSocket，因为 useEffect 已经处理
-  };
+  // Removed: WebRTC related functions (sendSignalingMessage, startVoiceCall, hangupVoiceCall)
 
   const wrapperClassName = [
     'flex flex-col',
@@ -465,6 +315,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
   const panelClassName = isEmbedded
     ? 'w-full h-[70vh] min-h-[560px] max-h-[780px]'
     : 'w-[375px] h-[600px]';
+
+  const filteredFaqs = FAQ_CONFIG.filter(faq => faq.category === activeTab);
 
   return (
     <div className={wrapperClassName}>
@@ -487,14 +339,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
               <button onClick={() => setIsVoiceMode(!isVoiceMode)} className="w-8 h-8 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
                 <i className={`fa-solid ${isVoiceMode ? 'fa-microphone-slash' : 'fa-microphone'} text-xl`}></i>
               </button>
-              {/* 新增：语音通话按钮 */}
-              <button
-                onClick={isVoiceCallActive ? hangupVoiceCall : startVoiceCall}
-                className="w-8 h-8 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
-                title={isVoiceCallActive ? '挂断语音通话' : '发起语音通话'}
-              >
-                <i className={`fa-solid ${isVoiceCallActive ? 'fa-phone-slash text-red-500' : 'fa-phone text-emerald-500'} text-xl`}></i>
-              </button>
+              {/* Removed: Voice call button */}
               {!isEmbedded && (
                 <button onClick={() => setIsOpen(false)} className="w-8 h-8 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
                   <i className="fa-solid fa-xmark text-xl"></i>
@@ -527,26 +372,26 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
                     ))}
                   </div>
                   <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hidden">
-                    {TABS.map((tab) => (
+                    {faqCategories.map((category) => (
                       <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`px-4 py-1.5 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${activeTab === tab ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        key={category}
+                        onClick={() => setActiveTab(category)}
+                        className={`px-4 py-1.5 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${activeTab === category ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
                       >
-                        {tab}
+                        {category}
                       </button>
                     ))}
                   </div>
                   {/* FAQ List */}
                   <div className="space-y-1">
-                    {FAQ_CONFIG.map((item, i) => (
+                    {filteredFaqs.map((faq, i) => (
                       <button
                         key={i}
-                        onClick={() => handleFAQClick(item.title)}
+                        onClick={() => handleFAQClick(faq.title)}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex justify-between items-center group transition-colors border-b border-gray-50 last:border-0"
                       >
-                        <span className="line-clamp-1">{item.title}</span>
+                        <span className="line-clamp-1">{faq.title}</span>
                         <i className="fa-solid fa-chevron-right text-gray-300 text-xs group-hover:text-emerald-500"></i>
                       </button>
                     ))}

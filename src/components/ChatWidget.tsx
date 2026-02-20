@@ -40,6 +40,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAgentTyping, setIsAgentTyping] = useState(false); // 新增状态：客服是否正在输入
+  const [isVoiceCallActive, setIsVoiceCallActive] = useState(false); // 新增：语音通话是否激活
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -297,6 +298,161 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
     handleSendMessage(question);
   };
 
+  const sendSignalingMessage = (type: string, payload: any) => {
+    if (websocketRef.current && websocketRef.current.readyState === WebSocket.OPEN) {
+      const message = JSON.stringify({ type, payload, conversationId: conversationIdRef.current });
+      websocketRef.current.send(message);
+    } else {
+      console.warn('WebSocket is not open. Cannot send signaling message.');
+    }
+  };
+
+  // WebRTC 相关状态和对象
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement | null>(null); // 用于播放远程音频
+  const websocketRef = useRef<WebSocket | null>(null);
+
+  // 确保在组件卸载时清理 WebRTC 资源
+  useEffect(() => {
+    return () => {
+      hangupVoiceCall(); // 清理通话
+      websocketRef.current?.close(); // 关闭 WebSocket 连接
+    };
+  }, []);
+
+  const startVoiceCall = async () => {
+    if (isVoiceCallActive) return;
+
+    console.log('[WebRTC] 正在发起语音通话...');
+    try {
+      // 1. 获取本地音流
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStreamRef.current = stream;
+      setIsVoiceCallActive(true);
+
+      // 2. 创建 RTCPeerConnection
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }], // 使用公共STUN服务器
+      });
+      peerConnectionRef.current = pc;
+
+      // 3. 将本地音流添加到 RTCPeerConnection
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+      // 4. 处理 ICE 候选
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          console.log('[WebRTC] 发送 ICE Candidate:', event.candidate);
+          sendSignalingMessage('ice-candidate', event.candidate);
+        }
+      };
+
+      // 5. 处理远程媒体流
+      pc.ontrack = (event) => {
+        console.log('[WebRTC] 收到远程媒体流', event.streams[0]);
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = event.streams[0];
+        }
+      };
+
+      // 6. 处理连接状态变化
+      pc.onconnectionstatechange = () => {
+        console.log('[WebRTC] 连接状态:', pc.connectionState);
+        if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+          console.log('[WebRTC] 连接断开或失败，自动挂断。');
+          hangupVoiceCall();
+        }
+      };
+
+      // 7. 创建并发送 Offer (SDP)
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      console.log('[WebRTC] 发送 SDP Offer:', offer);
+      sendSignalingMessage('offer', offer);
+
+      // 8. 初始化 WebSocket 连接（如果尚未连接）
+      if (!websocketRef.current || websocketRef.current.readyState === WebSocket.CLOSED) {
+        websocketRef.current = new WebSocket('ws://localhost:8080/ws'); // 替换为你的信令服务器地址
+        websocketRef.current.onopen = () => {
+          console.log('[WebSocket] 连接成功');
+          // 连接成功后可以立即发送 Offer 或其他初始信令
+        };
+        websocketRef.current.onmessage = async (event) => {
+          const message = JSON.parse(event.data);
+          console.log('[WebSocket] 收到信令消息:', message);
+
+          if (message.conversationId !== conversationIdRef.current) {
+            console.warn('[WebSocket] 收到非当前会话的信令消息，忽略。');
+            return;
+          }
+
+          if (message.type === 'offer') {
+            await pc.setRemoteDescription(new RTCSessionDescription(message.payload));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            sendSignalingMessage('answer', answer);
+          } else if (message.type === 'answer') {
+            await pc.setRemoteDescription(new RTCSessionDescription(message.payload));
+          } else if (message.type === 'ice-candidate') {
+            await pc.addIceCandidate(new RTCIceCandidate(message.payload));
+          } else if (message.type === 'hangup') {
+            console.log('[WebRTC] 收到挂断信令');
+            hangupVoiceCall();
+          }
+        };
+        websocketRef.current.onclose = () => {
+          console.log('[WebSocket] 连接关闭');
+          hangupVoiceCall(); // WebSocket 关闭时也挂断通话
+        };
+        websocketRef.current.onerror = (error) => {
+          console.error('[WebSocket] 连接错误:', error);
+          hangupVoiceCall(); // WebSocket 错误时也挂断通话
+        };
+      }
+
+
+      // 在这里添加一个隐藏的 audio 元素用于播放远程音频
+      if (!remoteAudioRef.current) {
+        remoteAudioRef.current = document.createElement('audio');
+        remoteAudioRef.current.autoplay = true;
+        remoteAudioRef.current.style.display = 'none';
+        document.body.appendChild(remoteAudioRef.current);
+      }
+
+    } catch (error) {
+      console.error('[WebRTC] 发起语音通话失败:', error);
+      setIsVoiceCallActive(false);
+      // 可以给用户一个错误提示
+      pushAiMessage(conversationIdRef.current!, '发起语音通话失败，请稍后再试。', true);
+    }
+  };
+
+  const hangupVoiceCall = () => {
+    console.log('[WebRTC] 正在挂断语音通话...');
+
+    // 发送挂断信令
+    sendSignalingMessage('hangup', {});
+
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current = null;
+    }
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.pause();
+      remoteAudioRef.current.srcObject = null;
+      // remoteAudioRef.current.remove(); // 不再自动移除，由浏览器自行管理
+      remoteAudioRef.current = null;
+    }
+    setIsVoiceCallActive(false);
+
+    // 不需要在这里关闭 WebSocket，因为 useEffect 已经处理
+  };
+
   const wrapperClassName = [
     'flex flex-col',
     isEmbedded ? 'w-full items-stretch' : 'fixed bottom-6 right-6 z-50 items-end',
@@ -329,6 +485,14 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ mode = 'widget', initialOpen = 
             <div className="flex items-center gap-2">
               <button onClick={() => setIsVoiceMode(!isVoiceMode)} className="w-8 h-8 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
                 <i className={`fa-solid ${isVoiceMode ? 'fa-microphone-slash' : 'fa-microphone'} text-xl`}></i>
+              </button>
+              {/* 新增：语音通话按钮 */}
+              <button
+                onClick={isVoiceCallActive ? hangupVoiceCall : startVoiceCall}
+                className="w-8 h-8 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+                title={isVoiceCallActive ? '挂断语音通话' : '发起语音通话'}
+              >
+                <i className={`fa-solid ${isVoiceCallActive ? 'fa-phone-slash text-red-500' : 'fa-phone text-emerald-500'} text-xl`}></i>
               </button>
               {!isEmbedded && (
                 <button onClick={() => setIsOpen(false)} className="w-8 h-8 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">

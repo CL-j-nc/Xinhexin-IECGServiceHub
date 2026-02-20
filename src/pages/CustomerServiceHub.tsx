@@ -51,9 +51,6 @@ const CustomerServiceHub: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-6 text-sm text-emerald-700 leading-relaxed">
-              为保护客户数据，请勿在对话中发送完整证件号码或敏感信息。系统将对高风险内容自动拦截。
-            </div>
           </div>
         </div>
       </div>
